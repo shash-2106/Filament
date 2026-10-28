@@ -62,11 +62,11 @@ This document records the foundational architectural decisions for Filament, the
 
 ---
 
-## ADR 007: Python Runtime Compatibility (Provisional)
-* **Decision:** The supported Python version remains **provisional** pending ecosystem compatibility testing.
+## ADR 007: Python Runtime Compatibility & Version Selection
+* **Decision:** Standardize the backend runtime on **Python 3.12** (`Python 3.12.13`).
 * **Rationale:**
-  * The local development machine has Python 3.14 installed.
-  * Several core dependencies in the Python data and web ecosystem (e.g., binary wheels for async database drivers, ORM extensions, or validation libraries) may have limited or pre-release support on Python 3.14.
-  * Before locking the project's supported Python version (e.g., Python 3.11, 3.12, or 3.13 vs 3.14), library compatibility must be explicitly verified.
-* **Status:** Provisional (requires compatibility verification before pinning environment).
+  * While the host environment also had Python 3.14 pre-release installed, major ecosystem packages (precompiled binary wheels for `asyncpg`, `pydantic-core`, `uvloop`) and ORM tooling are proven stable on Python 3.12.
+  * Installed and verified with FastAPI 0.162, SQLAlchemy 2.1.6, Alembic 1.20.1, asyncpg 0.32.0, Pydantic 2.14.1, and pytest 9.2.0 in `apps/api/.venv`.
+  * Python 3.11 through 3.13 are permitted by package metadata (`requires-python = ">=3.11,<3.14"`), with 3.12 as the primary tested baseline.
+* **Status:** Accepted (Python 3.12 selected and verified).
 

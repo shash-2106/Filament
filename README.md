@@ -36,20 +36,18 @@ Filament/
 
 ---
 
-## Planned Development Stages
+## Development Stages
 
-All features listed below reflect planned capabilities and are **not yet implemented**:
-
-* **Stage 1 (Current):** Foundation setup, monorepo scaffolding, configuration templates, and architecture documentation.
-* **Stage 2 (Planned):** Python runtime verification, virtual environment setup, and baseline dependency selection.
-* **Stage 3 (Planned):** Database connection, Alembic setup, and core provenance schema modeling (Agents, Memories, Provenance Records, Access Policies).
+* **Stage 1 (Complete):** Foundation setup, monorepo scaffolding, configuration templates, and architecture documentation.
+* **Stage 2 (Complete):** Python runtime verification (Python 3.12), virtual environment setup, FastAPI backend scaffolding, and automated test suite.
+* **Stage 3 (Planned):** Database connection, Alembic migrations, and core provenance schema modeling (Agents, Memories, Provenance Records, Access Policies).
 * **Stage 4 (Planned):** Backend domain services and FastAPI endpoints for memory ingestion, lineage tracking, and policy enforcement.
 * **Stage 5 (Planned):** Web frontend dashboard for visual provenance exploration and memory governance control.
 * **Stage 6 (Planned):** Agent SDK / client library integration and end-to-end audit pipelines.
 
 ---
 
-## Python Compatibility Notice
+## Python Runtime Notice
 
-During local environment reconnaissance, Python 3.14 was identified on the host system. Because major third-party libraries in the Python ecosystem (such as specific async database drivers, ORM extensions, or Pydantic binary wheels) may not yet publish stable wheels for Python 3.14, **the supported Python version for Filament is marked as provisional**. Dependency compatibility across prospective runtime versions (e.g., Python 3.11, 3.12, or 3.13) will be validated before locking dependencies in `apps/api`.
+Following runtime inspection and dependency verification, **Python 3.12 (`Python 3.12.13`)** was selected for the backend environment in `apps/api/.venv`. While the host machine has Python 3.14 pre-release, third-party libraries (`asyncpg`, `pydantic-core`, `uvloop`, `sqlalchemy`) provide stable compiled wheels and testing compatibility under Python 3.12. The `pyproject.toml` specification allows `>=3.11,<3.14`.
 
