@@ -69,10 +69,15 @@ class Settings(BaseSettings):
     def validate_production_security(self) -> "Settings":
         """Enforces security boundaries for production deployments."""
         if self.ENVIRONMENT == "production":
-            if self.AUTH_SECRET_KEY == "replace_with_a_secure_random_key_for_local_dev":
-                raise ValueError("AUTH_SECRET_KEY must be changed from default placeholder in production.")
+            if (
+                self.AUTH_SECRET_KEY == "replace_with_a_secure_random_key_for_local_dev"
+                or len(self.AUTH_SECRET_KEY.strip()) < 16
+            ):
+                raise ValueError("AUTH_SECRET_KEY must be configured with a secure key in production.")
             if "localhost" in self.DATABASE_URL or "filament_dev" in self.DATABASE_URL:
                 raise ValueError("Production DATABASE_URL cannot reference local dev database.")
+            if "*" in self.CORS_ORIGINS:
+                raise ValueError("Wildcard CORS origins ('*') are not permitted in production.")
         return self
 
 

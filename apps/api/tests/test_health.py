@@ -1,6 +1,7 @@
 """Tests for the Filament API health endpoint and application initialization."""
 
 import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
 from pydantic import ValidationError
 
@@ -42,10 +43,17 @@ async def test_openapi_documentation_accessible(async_client: AsyncClient) -> No
 
 def test_production_settings_enforce_security_guards() -> None:
     """Ensures that production mode strictly disallows placeholder secrets or local DB URLs."""
-    with pytest.raises(ValidationError, match="AUTH_SECRET_KEY must be changed"):
+    with pytest.raises(ValidationError, match="AUTH_SECRET_KEY must be configured"):
         Settings(
             ENVIRONMENT="production",
             AUTH_SECRET_KEY="replace_with_a_secure_random_key_for_local_dev",
+            DATABASE_URL="postgresql+asyncpg://prod_user:secret@prod-db.example.com:5432/filament_prod",
+        )
+
+    with pytest.raises(ValidationError, match="AUTH_SECRET_KEY must be configured"):
+        Settings(
+            ENVIRONMENT="production",
+            AUTH_SECRET_KEY="short_key",
             DATABASE_URL="postgresql+asyncpg://prod_user:secret@prod-db.example.com:5432/filament_prod",
         )
 
@@ -56,6 +64,14 @@ def test_production_settings_enforce_security_guards() -> None:
             DATABASE_URL="postgresql+asyncpg://postgres:postgres@localhost:5432/filament_dev",
         )
 
+    with pytest.raises(ValidationError, match="Wildcard CORS origins"):
+        Settings(
+            ENVIRONMENT="production",
+            AUTH_SECRET_KEY="a_legitimate_production_secret_key_12345",
+            DATABASE_URL="postgresql+asyncpg://prod_user:secret@prod-db.example.com:5432/filament_prod",
+            CORS_ORIGINS=["*"],
+        )
+
 
 def test_development_settings_allow_local_defaults() -> None:
     """Ensures local developer settings construct without error using standard defaults."""
@@ -63,4 +79,73 @@ def test_development_settings_allow_local_defaults() -> None:
     assert dev_settings.ENVIRONMENT == "development"
     assert dev_settings.API_PORT == 8000
     assert dev_settings.API_V1_PREFIX == "/api/v1"
+
+
+@pytest.mark.asyncio
+async def test_get_db_transaction_commit_on_success(app: FastAPI, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that get_db commits active transactions when request succeeds."""
+    from unittest.mock import AsyncMock, MagicMock
+    from filament_api.db import session as db_session
+    from fastapi import Depends
+    from httpx import ASGITransport, AsyncClient
+
+    mock_session = AsyncMock()
+    mock_session.is_active = True
+    mock_session.in_transaction = MagicMock(return_value=True)
+
+    mock_factory = MagicMock()
+    mock_factory.return_value.__aenter__.return_value = mock_session
+
+    monkeypatch.setattr(db_session, "get_session_factory", lambda: mock_factory)
+
+    @app.get("/test-db-success")
+    async def route_success(db = Depends(db_session.get_db)) -> dict:
+        return {"result": "ok"}
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        res = await client.get("/test-db-success")
+        assert res.status_code == 200
+
+    mock_session.commit.assert_awaited_once()
+    mock_session.rollback.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_get_db_transaction_rollback_on_error(app: FastAPI, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that get_db rolls back active transactions when an unhandled exception is raised in route."""
+    from unittest.mock import AsyncMock, MagicMock
+    from filament_api.db import session as db_session
+    from fastapi import Depends
+    from httpx import ASGITransport, AsyncClient
+
+    mock_session = AsyncMock()
+    mock_session.is_active = True
+    mock_session.in_transaction = MagicMock(return_value=True)
+
+    mock_factory = MagicMock()
+    mock_factory.return_value.__aenter__.return_value = mock_session
+
+    monkeypatch.setattr(db_session, "get_session_factory", lambda: mock_factory)
+
+    @app.get("/test-db-error")
+    async def route_error(db = Depends(db_session.get_db)) -> dict:
+        raise RuntimeError("Simulated route error")
+
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        res = await client.get("/test-db-error")
+        assert res.status_code == 500
+
+    mock_session.rollback.assert_awaited_once()
+    mock_session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_database_engine_cleanup_lifecycle() -> None:
+    """Verifies that close_db_engine handles uninitialized and disposed states gracefully."""
+    from filament_api.db.session import close_db_engine
+    # When already None
+    await close_db_engine()
+    # No exception raised
 

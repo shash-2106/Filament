@@ -68,16 +68,17 @@ async def close_db_engine() -> None:
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency for yielding transactional database sessions.
 
-    Ensures rollback on failure and clean closure after request completion.
+    Ensures explicit commit when an active transaction is present,
+    rollback on exception, and clean release back to the connection pool.
     """
     factory = get_session_factory()
     async with factory() as session:
         try:
             yield session
-            await session.commit()
+            if session.is_active and session.in_transaction():
+                await session.commit()
         except Exception:
-            await session.rollback()
+            if session.is_active:
+                await session.rollback()
             raise
-        finally:
-            await session.close()
 
