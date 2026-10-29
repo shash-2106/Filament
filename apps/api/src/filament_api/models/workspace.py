@@ -58,11 +58,13 @@ class Workspace(Base):
         "Claim",
         back_populates="workspace",
         cascade="all, delete-orphan",
+        overlaps="agent,claims",
     )
     evidence: Mapped[List["Evidence"]] = relationship(
         "Evidence",
         back_populates="workspace",
         cascade="all, delete-orphan",
+        overlaps="agent_collector,user_collector",
     )
     claim_relations: Mapped[List["ClaimRelation"]] = relationship(
         "ClaimRelation",

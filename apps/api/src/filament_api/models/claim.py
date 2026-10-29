@@ -104,8 +104,8 @@ class Claim(Base):
     )
 
     # Relationships
-    workspace: Mapped["Workspace"] = relationship("Workspace", back_populates="claims")
-    agent: Mapped["Agent"] = relationship("Agent", back_populates="claims")
+    workspace: Mapped["Workspace"] = relationship("Workspace", back_populates="claims", overlaps="claims")
+    agent: Mapped["Agent"] = relationship("Agent", back_populates="claims", overlaps="workspace,claims")
     evidence_links: Mapped[List["ClaimEvidence"]] = relationship(
         "ClaimEvidence",
         back_populates="claim",
@@ -186,5 +186,9 @@ class ClaimEvidence(Base):
 
     # Relationships
     claim: Mapped["Claim"] = relationship("Claim", back_populates="evidence_links")
-    evidence: Mapped["Evidence"] = relationship("Evidence", back_populates="claim_links")
+    evidence: Mapped["Evidence"] = relationship(
+        "Evidence",
+        back_populates="claim_links",
+        overlaps="claim,evidence_links",
+    )
 

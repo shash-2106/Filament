@@ -91,11 +91,12 @@ class Evidence(Base):
 
     # Relationships
     workspace: Mapped["Workspace"] = relationship("Workspace", back_populates="evidence")
-    agent_collector: Mapped["Agent | None"] = relationship("Agent")
-    user_collector: Mapped["User | None"] = relationship("User")
+    agent_collector: Mapped["Agent | None"] = relationship("Agent", overlaps="workspace")
+    user_collector: Mapped["User | None"] = relationship("User", overlaps="agent_collector,workspace")
     claim_links: Mapped[List["ClaimEvidence"]] = relationship(
         "ClaimEvidence",
         back_populates="evidence",
         cascade="all, delete-orphan",
+        overlaps="claim,evidence_links",
     )
 
