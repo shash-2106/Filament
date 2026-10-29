@@ -70,3 +70,59 @@ This document records the foundational architectural decisions for Filament, the
   * Python 3.11 through 3.13 are permitted by package metadata (`requires-python = ">=3.11,<3.14"`), with 3.12 as the primary tested baseline.
 * **Status:** Accepted (Python 3.12 selected and verified).
 
+---
+
+## ADR 008: Dual-Relation Graph Model for Claim Lineage
+* **Decision:** Represent both claim replacement (supersession) and causal derivation (dependencies) in a unified directed edge table `claim_relations` with explicit `relation_type` and mandatory human/agent `rationale`.
+* **Rationale:**
+  * Avoids conflating "revising a claim" with "deriving conclusions from a claim".
+  * Allows arbitrary N:M DAG structures while keeping traversal queries indexed and straightforward.
+  * Captures the semantic justification for why a newer claim supersedes an older claim.
+* **Status:** Accepted.
+
+---
+
+## ADR 009: Non-Destructive Invalidation Semantics (`needs_review`)
+* **Decision:** When an upstream claim is superseded, dependent claims and recommendations must transition to `needs_review` rather than being automatically deleted, muted, or marked false.
+* **Rationale:**
+  * A change in underlying evidence or an upstream claim invalidates the deductive basis of a recommendation, but does not prove the recommendation itself is false or useless.
+  * Non-destructive marking preserves auditability, lineage, and enables human-in-the-loop or agentic re-evaluation.
+* **Status:** Accepted.
+
+---
+
+## ADR 010: Multi-Tier Memory Scope and Server-Side Isolation
+* **Decision:** Implement strict three-tier memory visibility (`private`, `team`, `workspace`) within each tenant workspace, enforced exclusively by the server-side service layer.
+* **Rationale:**
+  * Prevents private agent observations or reasoning scratchpads from leaking into shared team contexts without explicit promotion.
+  * Does not rely on LLM system prompt compliance or client filtering.
+  * Pairs application-level repository filtering with foreign keys to `workspace_id` for defense-in-depth across shared database connection pools.
+* **Status:** Accepted.
+
+---
+
+## ADR 011: Caller-Bound Agent Identity and Explicit Scope Verification
+* **Decision:** Resolve agent caller identity exclusively from verified API authentication tokens (`api_key_hash`), rejecting client-supplied `agent_id` overrides.
+* **Rationale:**
+  * Prevents agent impersonation where an agent could query private memories of other agents simply by passing their `agent_id`.
+  * Guarantees that private scope evaluation `(scope = 'private' AND agent_id = :authenticated_agent_id)` is tamper-proof.
+* **Status:** Accepted.
+
+---
+
+## ADR 012: Composite Workspace Integrity for Inter-Claim Edges
+* **Decision:** Enforce composite foreign keys `(workspace_id, source_claim_id)` and `(workspace_id, target_claim_id)` on `claim_relations` referencing `claims(workspace_id, id)`.
+* **Rationale:**
+  * Prevents cross-workspace data corruption where a claim in Workspace A could inadvertently supersede or depend on a claim in Workspace B.
+  * Guarantees tenant isolation at the relational schema level.
+* **Status:** Accepted.
+
+---
+
+## ADR 013: Append-Only Immutability for Audit Trail
+* **Decision:** Enforce append-only immutability on `audit_events` via PostgreSQL privilege revocation (`REVOKE UPDATE, DELETE`) and a database trigger preventing mutations.
+* **Rationale:**
+  * Memory governance requires a non-repudiable history of supersessions, invalidations, and access denials.
+  * Prevents compromised application services from tampering with historic audit logs.
+* **Status:** Accepted.
+
