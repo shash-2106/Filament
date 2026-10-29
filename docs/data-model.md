@@ -118,12 +118,17 @@ Immutable records of source artifacts, chat turns, documents, or external signal
 | `source_uri` | `TEXT` | `NOT NULL` | URI, path, or identifier (e.g. `repo/README.md#L15`, `git://a1b2c3d`). |
 | `content_hash` | `VARCHAR(64)` | `NOT NULL` | SHA-256 hash of the evidence snapshot for integrity verification. |
 | `raw_snippet` | `TEXT` | `NOT NULL` | Verbatim text excerpt or content supporting or refuting a claim. |
-| `collected_by_agent`| `UUID` | `NULLABLE, FK -> agents(id) ON DELETE SET NULL` | Agent that harvested the evidence. |
-| `collected_by_user` | `UUID` | `NULLABLE, FK -> users(id) ON DELETE SET NULL` | Human operator that uploaded or confirmed evidence. |
+| `collected_by_agent`| `UUID` | `NULLABLE` | Agent that harvested the evidence. |
+| `collected_by_user` | `UUID` | `NULLABLE` | Human operator that uploaded or confirmed evidence. |
 | `metadata` | `JSONB` | `NOT NULL, DEFAULT '{}'::jsonb` | Extensible metadata (file version, commit author, timestamps, mime type). |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT NOW()` | Evidence capture timestamp. |
 
+* **Composite Workspace Foreign Keys:**
+  Attribution pointers enforce tenant isolation while preserving evidence if an actor is deleted via PostgreSQL column-specific `SET NULL`:
+  * `FOREIGN KEY (workspace_id, collected_by_agent) REFERENCES agents(workspace_id, id) ON DELETE SET NULL (collected_by_agent)`
+  * `FOREIGN KEY (workspace_id, collected_by_user) REFERENCES users(workspace_id, id) ON DELETE SET NULL (collected_by_user)`
 * **Indexes & Constraints:**
+  * `CREATE UNIQUE INDEX uq_evidence_workspace_id ON evidence(workspace_id, id);`
   * `CREATE INDEX idx_evidence_workspace ON evidence(workspace_id);`
   * `CREATE INDEX idx_evidence_source_lookup ON evidence(workspace_id, source_type, content_hash);`
   * `CREATE INDEX idx_evidence_metadata_gin ON evidence USING GIN (metadata);`
@@ -162,20 +167,26 @@ Atomic assertions, state observations, or derived recommendations stored in memo
 ---
 
 ### 3.6 `claim_evidence`
-Many-to-many junction table binding claims to supporting or refuting evidence records.
+Many-to-many junction table binding claims to supporting or refuting evidence records, with composite workspace consistency.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `claim_id` | `UUID` | `NOT NULL, FK -> claims(id) ON DELETE CASCADE` | Claim being justified or refuted. |
-| `evidence_id` | `UUID` | `NOT NULL, FK -> evidence(id) ON DELETE RESTRICT` | Associated evidence record. |
+| `workspace_id` | `UUID` | `NOT NULL, FK -> workspaces(id) ON DELETE CASCADE` | Tenant workspace boundary. |
+| `claim_id` | `UUID` | `NOT NULL` | Claim being justified or refuted. |
+| `evidence_id` | `UUID` | `NOT NULL` | Associated evidence record. |
 | `support_type` | `VARCHAR(16)` | `NOT NULL, DEFAULT 'supports', CHECK (support_type IN ('supports', 'refutes', 'mentions'))` | Polarity of the evidence relative to the claim. |
 | `extraction_notes` | `TEXT` | `NULLABLE` | Explanation of how the claim was synthesized or contradicted. |
 | `confidence_weight`| `NUMERIC(3, 2)` | `NOT NULL, DEFAULT 1.00, CHECK (confidence_weight >= 0.00 AND confidence_weight <= 1.00)` | Weight of this evidence for this claim. |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT NOW()` | Association timestamp. |
 
 * **Primary Key:** `PRIMARY KEY (claim_id, evidence_id)`
+* **Workspace Consistency Foreign Keys:**
+  * `FOREIGN KEY (workspace_id, claim_id) REFERENCES claims(workspace_id, id) ON DELETE CASCADE`
+  * `FOREIGN KEY (workspace_id, evidence_id) REFERENCES evidence(workspace_id, id) ON DELETE RESTRICT`
 * **Support Polarity Semantics:** Distinguishes evidence that validates a claim from evidence that refutes it, allowing claims to be marked `DISPUTED` with direct links to the contradicting evidence.
-* **Indexes:** `CREATE INDEX idx_claim_evidence_reverse ON claim_evidence(evidence_id, claim_id);`
+* **Indexes:**
+  * `CREATE INDEX idx_claim_evidence_reverse ON claim_evidence(evidence_id, claim_id);`
+  * `CREATE INDEX idx_claim_evidence_workspace ON claim_evidence(workspace_id);`
 
 ---
 
@@ -194,9 +205,9 @@ Captures directed causal and structural relationships between claims. This table
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT NOW()` | Relation creation timestamp. |
 
 * **Workspace Consistency Foreign Keys:**
-  Both claims in a relation must belong to the exact same workspace as the relation itself:
-  * `FOREIGN KEY (workspace_id, source_claim_id) REFERENCES claims(workspace_id, id) ON DELETE CASCADE`
-  * `FOREIGN KEY (workspace_id, target_claim_id) REFERENCES claims(workspace_id, id) ON DELETE CASCADE`
+  Both claims in a relation must belong to the exact same workspace as the relation itself, and cannot be hard-deleted while active relations exist:
+  * `FOREIGN KEY (workspace_id, source_claim_id) REFERENCES claims(workspace_id, id) ON DELETE RESTRICT`
+  * `FOREIGN KEY (workspace_id, target_claim_id) REFERENCES claims(workspace_id, id) ON DELETE RESTRICT`
 * **Integrity & Cycle Constraints:**
   * `CHECK (source_claim_id <> target_claim_id)` — Prevents immediate self-referential loops.
   * `CREATE UNIQUE INDEX uq_claim_relation_edge ON claim_relations(source_claim_id, target_claim_id, relation_type);`
@@ -219,7 +230,7 @@ Append-only, immutable security and governance audit trail recording all critica
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | `PRIMARY KEY` | Unique audit event identifier. |
-| `workspace_id` | `UUID` | `NOT NULL, FK -> workspaces(id) ON DELETE CASCADE` | Tenant workspace boundary. |
+| `workspace_id` | `UUID` | `NOT NULL, FK -> workspaces(id) ON DELETE RESTRICT` | Tenant workspace boundary (delete restricted by audit immutability). |
 | `actor_type` | `VARCHAR(32)` | `NOT NULL, CHECK (actor_type IN ('agent', 'user', 'system'))` | Actor initiating action. |
 | `actor_id` | `UUID` | `NOT NULL` | ID of the agent, user, or system worker. |
 | `event_type` | `VARCHAR(64)` | `NOT NULL` | E.g. `CLAIM_INGESTED`, `CLAIM_SUPERSEDED`, `DEPENDENCY_INVALIDATED`, `SCOPE_PROMOTION_REQUESTED`, `UNAUTHORIZED_ACCESS_BLOCKED`. |
@@ -367,8 +378,8 @@ When `c1` is updated to `SUPERSEDED`:
 
 ### 5.3 Graph Cycle Prevention
 Dependency chains (`depends_on`) and supersession lineages (`supersedes`) must strictly form Directed Acyclic Graphs (DAGs).
-* **Direct Self-Loops:** Prohibited by database constraint `CHECK (source_claim_id <> target_claim_id)`.
-* **Multi-Hop Cycles:** Before inserting into `claim_relations`, the service layer executes a depth-limited recursive traversal:
+* **Direct Self-Loops:** Prohibited declaratively by database constraint `CHECK (source_claim_id <> target_claim_id)`.
+* **Multi-Hop Cycles:** Because PostgreSQL static `CHECK` constraints cannot execute recursive subqueries, multi-hop transitive cycle detection is enforced by the application service layer prior to edge insertion:
   ```sql
   WITH RECURSIVE lineage AS (
       SELECT target_claim_id, 1 as depth
@@ -436,6 +447,7 @@ When `Agent B` queries memory:
     ```
   * During database session checkout, the connection sets `SET LOCAL app.current_workspace_id = :workspace_id`.
   * Migrations run under a separate administrative role (`filament_migrator` or `supabase_admin`) with schema alteration privileges.
+  * **Deployment Status:** Role creation (`filament_app`, `filament_migrator`) and database-level grants are deployment/infrastructure requirements managed at the cloud cluster level (e.g. Supabase or Terraform). They are intentionally not embedded in application Alembic migrations.
 
 ---
 

@@ -40,7 +40,7 @@ Filament/
 
 * **Stage 1 (Complete):** Foundation setup, monorepo scaffolding, configuration templates, and architecture documentation.
 * **Stage 2 (Complete):** Python runtime verification (Python 3.12), virtual environment setup, FastAPI backend scaffolding, and automated test suite.
-* **Stage 3 (Planned):** Database connection, Alembic migrations, and core provenance schema modeling (Agents, Memories, Provenance Records, Access Policies).
+* **Stage 3 (Complete):** Relational schema design, SQLAlchemy 2.x domain models, composite workspace isolation, Alembic initial migration with append-only audit protection trigger, and automated offline test suite.
 * **Stage 4 (Planned):** Backend domain services and FastAPI endpoints for memory ingestion, lineage tracking, and policy enforcement.
 * **Stage 5 (Planned):** Web frontend dashboard for visual provenance exploration and memory governance control.
 * **Stage 6 (Planned):** Agent SDK / client library integration and end-to-end audit pipelines.

@@ -8,3 +8,6 @@ class Base(DeclarativeBase):
 
     pass
 
+
+# Register all domain models with Base.metadata upon import
+import filament_api.models  # noqa: F401, E402
