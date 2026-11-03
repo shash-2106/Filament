@@ -1,6 +1,6 @@
 """Claim and ClaimEvidence domain models for memory assertions and provenance."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Dict, List
 import uuid
@@ -16,6 +16,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    and_,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -25,6 +26,7 @@ from filament_api.db.base import Base
 
 if TYPE_CHECKING:
     from filament_api.models.agent import Agent
+    from filament_api.models.condition import ClaimConditionSet
     from filament_api.models.evidence import Evidence
     from filament_api.models.relation import ClaimRelation
     from filament_api.models.workspace import Workspace
@@ -57,6 +59,13 @@ class Claim(Base):
             ["agents.workspace_id", "agents.id"],
             ondelete="RESTRICT",
             name="fk_claims_agent",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "id", "active_condition_version"],
+            ["claim_condition_sets.workspace_id", "claim_condition_sets.claim_id", "claim_condition_sets.version"],
+            ondelete="RESTRICT",
+            name="fk_claims_active_condition_set",
+            use_alter=True,
         ),
         Index("idx_claims_query_active", "workspace_id", "scope", "status", "subject"),
         Index("idx_claims_agent_scope", "workspace_id", "agent_id", "scope"),
@@ -91,14 +100,21 @@ class Claim(Base):
         default=Decimal("1.00"),
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    active_condition_version: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        default=None,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
+        default=lambda: datetime.now(timezone.utc),
         onupdate=func.now(),
         nullable=False,
     )
@@ -122,6 +138,19 @@ class Claim(Base):
         primaryjoin="Claim.id == ClaimRelation.target_claim_id",
         back_populates="target_claim",
         cascade="all, delete-orphan",
+    )
+    condition_sets: Mapped[List["ClaimConditionSet"]] = relationship(
+        "ClaimConditionSet",
+        primaryjoin="and_(Claim.workspace_id == ClaimConditionSet.workspace_id, Claim.id == ClaimConditionSet.claim_id)",
+        foreign_keys="[ClaimConditionSet.workspace_id, ClaimConditionSet.claim_id]",
+        back_populates="claim",
+    )
+    active_condition_set: Mapped["ClaimConditionSet | None"] = relationship(
+        "ClaimConditionSet",
+        primaryjoin="and_(Claim.workspace_id == ClaimConditionSet.workspace_id, Claim.id == ClaimConditionSet.claim_id, Claim.active_condition_version == ClaimConditionSet.version)",
+        foreign_keys="[Claim.workspace_id, Claim.id, Claim.active_condition_version]",
+        post_update=True,
+        overlaps="agent,claims,condition_sets,workspace",
     )
 
 
@@ -181,6 +210,7 @@ class ClaimEvidence(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 

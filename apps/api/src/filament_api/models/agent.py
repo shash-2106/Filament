@@ -26,6 +26,7 @@ class Agent(Base):
         ),
         UniqueConstraint("workspace_id", "name", name="uq_agents_workspace_name"),
         UniqueConstraint("workspace_id", "id", name="uq_agents_workspace_id"),
+        UniqueConstraint("api_key_hash", name="uq_agents_api_key_hash"),
         Index("idx_agents_workspace", "workspace_id"),
     )
 
