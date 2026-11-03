@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --color-parchment: #F1EBDD;
+  --color-parchment-light: #F8F5EE;
+  --color-parchment-card: #EAE3D3;
+  --color-parchment-dark: #DFD5C0;
+
+  --color-aubergine: #302333;
+  --color-aubergine-deep: #211723;
+  --color-aubergine-light: #443248;
+  --color-aubergine-surface: #382B3B;
+  --color-aubergine-border: #4D3B51;
+  --color-aubergine-text-muted: #8E7B92;
+
+  --color-copper: #B86F4B;
+  --color-copper-hover: #A05C3A;
+  --color-copper-light: #CF835E;
+  --color-copper-tint: #F7EFEA;
+  --color-copper-border: #D89878;
+
+  --color-citron: #C4C66A;
+  --color-citron-light: #D5D785;
+  --color-citron-dark: #A4A648;
+  --color-citron-tint: #F9F9E7;
+  --color-citron-border: #D2D489;
+
+  --color-stone: #D8C9B7;
+  --color-stone-light: #E7DDD0;
+  --color-stone-border: #C8B9A6;
+  --color-stone-dark: #9F907E;
+  --color-stone-muted: #7A6C5B;
+
+  --color-sage: #718477;
+  --color-sage-light: #8A9D90;
+  --color-sage-dark: #55665A;
+  --color-sage-tint: #EDF2EE;
+  --color-sage-border: #9CB2A3;
+
+  --color-terracotta: #C86D51;
+  --color-terracotta-light: #DC8367;
+  --color-terracotta-dark: #AB5438;
+  --color-terracotta-tint: #FAECE8;
+  --color-terracotta-border: #E2947D;
+
+  --font-editorial: 'Newsreader', Georgia, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Custom Scrollbar for editorial workstation */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EAE3D3;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C8B9A6;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #B86F4B;
+}
+
+/* Monospace technical pill utility */
+.tech-pill {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: -0.02em;
+}
+
