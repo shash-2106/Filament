@@ -1,5 +1,6 @@
 """Evidence domain service for ingesting immutable source snapshots."""
 
+from datetime import datetime, timezone
 import hashlib
 import uuid
 
@@ -49,6 +50,7 @@ class EvidenceService:
             collected_by_agent=collected_by_agent,
             collected_by_user=collected_by_user,
             metadata_=params.metadata,
+            created_at=datetime.now(timezone.utc),
         )
         session.add(evidence)
 

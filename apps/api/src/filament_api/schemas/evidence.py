@@ -1,5 +1,6 @@
 """Pydantic schemas and DTOs for evidence operations."""
 
+from datetime import datetime
 from typing import Any, Dict, Literal, Optional
 import uuid
 
@@ -38,4 +39,21 @@ class RecordEvidenceParams(BaseModel):
         if not v.strip():
             raise ValueError("Field cannot be empty or whitespace-only.")
         return v
+
+
+class EvidenceResponse(BaseModel):
+    """API response schema for a recorded evidence record."""
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    id: uuid.UUID
+    workspace_id: uuid.UUID
+    source_type: SourceType
+    source_uri: str
+    content_hash: str
+    raw_snippet: str
+    collected_by_agent: Optional[uuid.UUID] = None
+    collected_by_user: Optional[uuid.UUID] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict, validation_alias="metadata_")
+    created_at: datetime
 

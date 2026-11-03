@@ -1,7 +1,7 @@
 """Application configuration management using Pydantic Settings."""
 
 from functools import lru_cache
-from typing import List, Literal
+from typing import List, Literal, Union
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = Field(default="/api/v1", description="URL prefix for v1 API routes")
     PROJECT_NAME: str = Field(default="Filament API", description="Project display title")
     VERSION: str = Field(default="0.1.0", description="API semantic version")
-    CORS_ORIGINS: List[str] = Field(
+    CORS_ORIGINS: Union[List[str], str] = Field(
         default=["http://localhost:5173", "http://127.0.0.1:5173"],
         description="Allowed CORS origin URLs for frontend clients",
     )

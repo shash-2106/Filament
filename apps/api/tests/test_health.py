@@ -82,8 +82,8 @@ def test_development_settings_allow_local_defaults() -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_db_transaction_commit_on_success(app: FastAPI, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verifies that get_db commits active transactions when request succeeds."""
+async def test_get_db_does_not_commit_automatically(app: FastAPI, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifies that get_db yields session without committing automatically upon request completion."""
     from unittest.mock import AsyncMock, MagicMock
     from filament_api.db import session as db_session
     from fastapi import Depends
@@ -98,16 +98,16 @@ async def test_get_db_transaction_commit_on_success(app: FastAPI, monkeypatch: p
 
     monkeypatch.setattr(db_session, "get_session_factory", lambda: mock_factory)
 
-    @app.get("/test-db-success")
-    async def route_success(db = Depends(db_session.get_db)) -> dict:
+    @app.get("/test-db-no-auto-commit")
+    async def route_no_commit(db = Depends(db_session.get_db)) -> dict:
         return {"result": "ok"}
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        res = await client.get("/test-db-success")
+        res = await client.get("/test-db-no-auto-commit")
         assert res.status_code == 200
 
-    mock_session.commit.assert_awaited_once()
+    mock_session.commit.assert_not_awaited()
     mock_session.rollback.assert_not_awaited()
 
 

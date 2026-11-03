@@ -231,7 +231,14 @@ Every domain operation stages an immutable record in `audit_events`.
   * `ClaimService.create_claim` with actor attribution validation and audit logging.
   * `ClaimService.link_evidence` with cross-workspace protection and audit logging.
   * Isolated unit and mock database tests verifying atomic audit creation and error conditions.
-* **Phase C (Scheduled Next):**
-  * `ClaimService.supersede_claim` and non-destructive `needs_review` dependency cascade.
-  * Recursive DAG cycle detection and lineage queries.
+* **Phase C (Implemented in Step 20):**
+  * `ClaimService.supersede_claim`, `create_dependency`, and `create_relation`.
+  * Non-destructive `needs_review` dependency cascade invalidation with `DEPENDENCY_INVALIDATED` audit events.
+  * Directed DAG cycle prevention (`CyclicRelationError`).
+  * Endpoints mounted under `/api/v1/claims/{id}/relations`, `/supersede`, and `/dependencies`.
+* **Phase D (Steps 22-24 - Condition Governance & Evaluation):**
+  * Models: `EnvironmentSnapshot`, `ClaimConditionSet`, `ClaimCondition`, `ClaimVerification`.
+  * `SnapshotService.record_snapshot`: Ingests agent-reported environment snapshots with path canonicalization and inventory completeness declarations (`packages_scope`, `runtime_scope`).
+  * `ConditionService.establish_initial_conditions`: Atomically establishes initial versioned condition set (version 1), validates conditions against snapshot, and binds `claims.active_condition_version`.
+  * `EvaluationService.evaluate_claim_conditions`: Transient read-only evaluation of claim conditions against a newly recorded snapshot following strict precedence semantics (`applicable`, `environment_mismatch`, `indeterminate`, `not_applicable`, `unconditioned`). Strictly read-only without transaction commit, mutation, or audit emission.
 

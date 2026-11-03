@@ -44,21 +44,99 @@ class ValidationDomainError(FilamentDomainError):
 class DuplicateLinkError(FilamentDomainError):
     """Raised when a claim-evidence link already exists."""
 
-    def __init__(self, claim_id: uuid.UUID, evidence_id: uuid.UUID) -> None:
-        super().__init__(
-            f"Evidence '{evidence_id}' is already linked to Claim '{claim_id}'."
-        )
+    def __init__(self, claim_id: uuid.UUID, evidence_id: uuid.UUID, message: str | None = None) -> None:
+        if message is None:
+            message = f"Evidence '{evidence_id}' is already linked to Claim '{claim_id}'."
+        super().__init__(message)
         self.claim_id = claim_id
         self.evidence_id = evidence_id
+
+
+class DuplicateRelationError(DuplicateLinkError):
+    """Raised when a claim relation edge already exists."""
+
+    def __init__(self, source_claim_id: uuid.UUID, target_claim_id: uuid.UUID, relation_type: str) -> None:
+        message = (
+            f"Relation '{relation_type}' from Claim '{source_claim_id}' to "
+            f"Claim '{target_claim_id}' already exists."
+        )
+        super().__init__(source_claim_id, target_claim_id, message=message)
+        self.source_claim_id = source_claim_id
+        self.target_claim_id = target_claim_id
+        self.relation_type = relation_type
+
+
+class CyclicRelationError(FilamentDomainError):
+    """Raised when adding a relation would introduce a directed cycle in the claims graph."""
+
+    def __init__(self, source_claim_id: uuid.UUID, target_claim_id: uuid.UUID, relation_type: str) -> None:
+        super().__init__(
+            f"Cannot create '{relation_type}' relation from Claim '{source_claim_id}' to "
+            f"Claim '{target_claim_id}': it would introduce a cycle in the {relation_type} graph."
+        )
+        self.source_claim_id = source_claim_id
+        self.target_claim_id = target_claim_id
+        self.relation_type = relation_type
 
 
 class InvalidClaimStateError(FilamentDomainError):
     """Raised when an illegal claim lifecycle transition is attempted."""
 
-    def __init__(self, current_status: str, requested_status: str) -> None:
+    def __init__(
+        self,
+        current_status: str,
+        requested_status: str,
+        message: str | None = None,
+    ) -> None:
         super().__init__(
-            f"Cannot transition claim status from '{current_status}' to '{requested_status}'."
+            message
+            or f"Cannot transition claim status from '{current_status}' to '{requested_status}'."
         )
         self.current_status = current_status
         self.requested_status = requested_status
+
+
+class StaleConditionVersionError(FilamentDomainError):
+    """Raised when re-verification specifies a stale or conflicting active condition version."""
+
+    def __init__(self, claim_id: uuid.UUID, expected_version: int, actual_version: int | None) -> None:
+        super().__init__(
+            f"Stale condition version for claim '{claim_id}': expected active version {expected_version}, "
+            f"but current active version is {actual_version}."
+        )
+        self.claim_id = claim_id
+        self.expected_version = expected_version
+        self.actual_version = actual_version
+
+
+from filament_api.core.canonicalization import PathValidationError
+
+
+class ConditionsAlreadyEstablishedError(FilamentDomainError):
+    """Raised when initial condition establishment is attempted on an already conditioned claim."""
+
+    def __init__(self, claim_id: uuid.UUID, active_version: int) -> None:
+        super().__init__(
+            f"Claim '{claim_id}' already has established condition set version {active_version}. "
+            "Use reverification to update conditions."
+        )
+        self.claim_id = claim_id
+        self.active_version = active_version
+
+
+class ConditionSnapshotMismatchError(ValidationDomainError):
+    """Raised when proposed conditions fail evaluation against the establishing snapshot."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class CriticalConditionRequiredError(ValidationDomainError):
+    """Raised when a condition set does not contain at least one critical condition."""
+
+    def __init__(
+        self,
+        message: str = "Every condition set must contain at least one condition with is_critical=true.",
+    ) -> None:
+        super().__init__(message)
 

@@ -66,19 +66,26 @@ async def close_db_engine() -> None:
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency for yielding transactional database sessions.
+    """FastAPI dependency for yielding database sessions.
 
-    Ensures explicit commit when an active transaction is present,
-    rollback on exception, and clean release back to the connection pool.
+    Yields an active AsyncSession, guarantees rollback when an exception escapes,
+    and cleanly releases and closes the session back to the connection pool upon exit.
+    Transaction commits are owned explicitly by endpoints, not by get_db.
     """
     factory = get_session_factory()
     async with factory() as session:
         try:
             yield session
-            if session.is_active and session.in_transaction():
-                await session.commit()
         except Exception:
             if session.is_active:
                 await session.rollback()
             raise
+        finally:
+            # Guarantees app.current_workspace_id is cleared before returning connection to pool
+            if session.is_active:
+                try:
+                    from sqlalchemy import text
+                    await session.execute(text("RESET app.current_workspace_id;"))
+                except Exception:
+                    pass
 
