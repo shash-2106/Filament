@@ -122,6 +122,9 @@ class LinkedEvidenceResponse(BaseModel):
     confidence_weight: Decimal
     extraction_notes: Optional[str] = None
     source_type: Optional[SourceType] = None
+    source_uri: Optional[str] = None
+    raw_snippet: Optional[str] = None
+    content_hash: Optional[str] = None
     created_at: datetime
 
 

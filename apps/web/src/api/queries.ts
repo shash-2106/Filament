@@ -84,6 +84,28 @@ export function useClaimDetailQuery(claimId: string | null) {
   });
 }
 
+export function useClaimConditionsQuery(claimId: string | null) {
+  return useQuery<ConditionSetResponse, ApiError>({
+    queryKey: ['claim-conditions', claimId],
+    queryFn: () => {
+      if (!claimId) throw new Error('claimId required');
+      return api.getClaimConditions(claimId);
+    },
+    enabled: Boolean(claimId),
+    retry: false,
+  });
+}
+
+export function useSnapshotsQuery() {
+  const apiKey = getStoredApiKey();
+  return useQuery<SnapshotResponse[], ApiError>({
+    queryKey: ['snapshots'],
+    queryFn: () => api.listSnapshots(),
+    enabled: Boolean(apiKey),
+    retry: false,
+  });
+}
+
 export function useEvidenceQuery(params?: { source_type?: string; limit?: number }) {
   const apiKey = getStoredApiKey();
   return useQuery<Evidence[], ApiError>({

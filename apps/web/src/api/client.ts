@@ -34,7 +34,11 @@ export class ApiError extends Error {
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 export function getStoredApiKey(): string {
-  return localStorage.getItem('filament_api_key') || '';
+  const key = localStorage.getItem('filament_api_key');
+  if (key !== null) {
+    return key.trim();
+  }
+  return 'fil_demo_key_12345';
 }
 
 export function setStoredApiKey(key: string): void {
@@ -187,6 +191,10 @@ export const api = {
   },
 
   // Snapshots
+  async listSnapshots(): Promise<SnapshotResponse[]> {
+    return request<SnapshotResponse[]>('/snapshots');
+  },
+
   async recordSnapshot(data: {
     source_ref: string;
     source_type?: string;
@@ -205,6 +213,10 @@ export const api = {
   },
 
   // Conditions & Evaluation
+  async getClaimConditions(claimId: string): Promise<ConditionSetResponse> {
+    return request<ConditionSetResponse>(`/claims/${claimId}/conditions`);
+  },
+
   async establishConditions(
     claimId: string,
     params: {

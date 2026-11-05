@@ -51,8 +51,12 @@ export function renderWithProviders(
     ...renderOptions
   }: ExtendedRenderOptions = {}
 ) {
-  if (apiKey) {
-    localStorage.setItem('filament_api_key', apiKey);
+  if (apiKey !== undefined) {
+    if (apiKey) {
+      localStorage.setItem('filament_api_key', apiKey);
+    } else {
+      localStorage.setItem('filament_api_key', '');
+    }
   } else {
     localStorage.removeItem('filament_api_key');
   }

@@ -37,6 +37,7 @@ export const App: React.FC = () => {
               <Route path="/overview" element={<OverviewPage />} />
               <Route path="/guide" element={<GuidePage />} />
               <Route path="/memory" element={<MemoryPage />} />
+              <Route path="/memories" element={<Navigate to="/memory" replace />} />
               <Route path="/evidence" element={<EvidencePage />} />
               <Route path="/dependencies" element={<DependenciesPage />} />
               <Route path="/agents" element={<AgentsPage />} />

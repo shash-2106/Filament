@@ -17,7 +17,7 @@ export const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
   const { apiKey, setApiKey, isConfigured } = useAuth();
   const [demoKeyInput, setDemoKeyInput] = useState(
-    apiKey || 'fil_live_demo_8ace124dc3e04feb8c197ef2d8266aea'
+    apiKey || 'fil_demo_key_12345'
   );
 
   const handleEnterWorkstation = (e: React.FormEvent) => {

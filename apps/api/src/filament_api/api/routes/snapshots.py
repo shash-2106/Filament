@@ -87,3 +87,40 @@ async def record_snapshot(
             detail={"error": {"code": "INTERNAL_SERVER_ERROR", "message": "An internal server error occurred."}},
         ) from exc
 
+
+@router.get(
+    "/snapshots",
+    response_model=list[SnapshotResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List Workspace Environment Snapshots",
+    description="Lists all immutable environment snapshots recorded within the caller's workspace.",
+)
+async def list_snapshots(
+    limit: int = 50,
+    offset: int = 0,
+    context: TrustedContext = Depends(get_current_agent_context),
+    session: AsyncSession = Depends(get_db),
+) -> list[SnapshotResponse]:
+    """List environment snapshots within the caller workspace."""
+    try:
+        from sqlalchemy import select
+        from filament_api.models.snapshot import EnvironmentSnapshot
+
+        stmt = (
+            select(EnvironmentSnapshot)
+            .where(EnvironmentSnapshot.workspace_id == context.workspace_id)
+            .order_by(EnvironmentSnapshot.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        res = await session.execute(stmt)
+        records = res.scalars().all()
+        return [SnapshotResponse.model_validate(r) for r in records]
+    except Exception as exc:
+        log_safe_exception(logger, f"Error listing snapshots for workspace {context.workspace_id}", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": {"code": "INTERNAL_SERVER_ERROR", "message": "An internal server error occurred."}},
+        ) from exc
+
+

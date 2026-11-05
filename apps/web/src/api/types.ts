@@ -59,6 +59,9 @@ export interface LinkedEvidence {
   confidence_weight: number;
   extraction_notes: string | null;
   source_type: string | null;
+  source_uri?: string | null;
+  raw_snippet?: string | null;
+  content_hash?: string | null;
   created_at: string;
 }
 

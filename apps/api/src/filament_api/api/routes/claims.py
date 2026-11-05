@@ -195,6 +195,9 @@ async def get_claim(
                 confidence_weight=link.confidence_weight,
                 extraction_notes=link.extraction_notes,
                 source_type=getattr(getattr(link, "evidence", None), "source_type", None),
+                source_uri=getattr(getattr(link, "evidence", None), "source_uri", None),
+                raw_snippet=getattr(getattr(link, "evidence", None), "raw_snippet", None),
+                content_hash=getattr(getattr(link, "evidence", None), "content_hash", None),
                 created_at=link.created_at,
             )
             for link in links
@@ -611,6 +614,81 @@ async def establish_claim_conditions(
         ) from exc
 
 
+@router.get(
+    "/claims/{claim_id}/conditions",
+    response_model=ConditionSetResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve Active Condition Set",
+    description="Fetches the active versioned condition set for a claim.",
+)
+async def get_claim_conditions(
+    claim_id: uuid.UUID,
+    context: TrustedContext = Depends(get_current_agent_context),
+    session: AsyncSession = Depends(get_db),
+) -> ConditionSetResponse:
+    """Retrieve the currently active condition set for a claim."""
+    try:
+        from sqlalchemy import select
+        from filament_api.models.claim import Claim
+        from filament_api.models.condition import ClaimConditionSet, ClaimCondition
+        from filament_api.schemas.condition import ConditionResponse
+
+        claim_stmt = select(Claim).where(Claim.id == claim_id, Claim.workspace_id == context.workspace_id)
+        claim_res = await session.execute(claim_stmt)
+        claim = claim_res.scalar_one_or_none()
+        if not claim:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found")
+
+        if claim.active_condition_version is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim has no active condition set")
+
+        cs_stmt = (
+            select(ClaimConditionSet)
+            .where(
+                ClaimConditionSet.workspace_id == context.workspace_id,
+                ClaimConditionSet.claim_id == claim_id,
+                ClaimConditionSet.version == claim.active_condition_version,
+            )
+        )
+        cs_res = await session.execute(cs_stmt)
+        cs = cs_res.scalar_one_or_none()
+        if not cs:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Condition set not found")
+
+        conds_stmt = (
+            select(ClaimCondition)
+            .where(
+                ClaimCondition.workspace_id == context.workspace_id,
+                ClaimCondition.claim_id == claim_id,
+                ClaimCondition.condition_set_version == cs.version,
+            )
+            .order_by(ClaimCondition.created_at.asc())
+        )
+        conds_res = await session.execute(conds_stmt)
+        conds = conds_res.scalars().all()
+
+        resp = ConditionSetResponse(
+            id=cs.id,
+            workspace_id=cs.workspace_id,
+            claim_id=cs.claim_id,
+            version=cs.version,
+            based_on_snapshot_id=cs.based_on_snapshot_id,
+            established_by_agent=cs.established_by_agent,
+            rationale=cs.rationale,
+            created_at=cs.created_at,
+            conditions=[ConditionResponse.model_validate(c) for c in conds],
+        )
+        return resp
+    except HTTPException:
+        raise
+    except Exception as exc:
+        log_safe_exception(logger, f"Error getting conditions for claim {claim_id}", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": {"code": "INTERNAL_SERVER_ERROR", "message": "An internal server error occurred."}},
+        ) from exc
+
+
 @router.post(
     "/claims/{claim_id}/evaluate",
     response_model=ClaimEvaluationResponse,
@@ -800,6 +878,7 @@ async def list_claim_relations(
 ) -> List[ClaimRelationResponse]:
     """Retrieve all claim relations in caller's workspace."""
     try:
+        from sqlalchemy import select
         from filament_api.models.relation import ClaimRelation
 
         stmt = select(ClaimRelation).where(ClaimRelation.workspace_id == context.workspace_id)

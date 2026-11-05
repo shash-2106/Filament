@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { getStoredApiKey, setStoredApiKey } from '../api/client';
 import { useCurrentWorkspaceQuery } from '../api/queries';
 
@@ -17,14 +17,9 @@ interface WorkspaceContextType {
 const AuthContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [apiKey, setApiKeyState] = useState<string>(getStoredApiKey());
-
-  useEffect(() => {
-    const existing = getStoredApiKey();
-    if (existing) {
-      setApiKeyState(existing);
-    }
-  }, []);
+  const [apiKey, setApiKeyState] = useState<string>(() => {
+    return getStoredApiKey();
+  });
 
   const handleSetApiKey = (key: string) => {
     setStoredApiKey(key);
