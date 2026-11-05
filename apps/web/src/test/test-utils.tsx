@@ -4,8 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../context/auth';
 
-export const createTestQueryClient = () =>
-  new QueryClient({
+export const createTestQueryClient = () => {
+  const qc = new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
@@ -16,6 +16,25 @@ export const createTestQueryClient = () =>
       },
     },
   });
+  // Set default mock workspace so UI components receive standard workspace identity
+  qc.setQueryData(['workspace', 'current'], {
+    id: '00000000-0000-0000-0000-000000000001',
+    name: 'Default Workspace',
+    slug: 'default-workspace',
+    created_at: '2026-11-01T00:00:00Z',
+    updated_at: '2026-11-01T00:00:00Z',
+    current_agent: {
+      id: '00000000-0000-0000-0000-000000000002',
+      workspace_id: '00000000-0000-0000-0000-000000000001',
+      name: 'Default Test Agent',
+      default_scope: 'team',
+      is_active: true,
+      created_at: '2026-11-01T00:00:00Z',
+      updated_at: '2026-11-01T00:00:00Z',
+    },
+  });
+  return qc;
+};
 
 interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
   route?: string;
@@ -55,4 +74,3 @@ export function renderWithProviders(
     queryClient,
   };
 }
-

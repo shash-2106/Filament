@@ -56,6 +56,60 @@ class Settings(BaseSettings):
     )
     AUTH_TOKEN_EXPIRE_MINUTES: int = Field(default=60, description="Token expiration window")
 
+    # Meta Model API & Budget-Controlled Gateway Configuration
+    MODEL_API_KEY: str = Field(
+        default="",
+        description="Meta Model API Bearer Key. Must never be exposed to frontend or logged.",
+    )
+    MODEL_API_BASE_URL: str = Field(
+        default="https://api.meta.ai/v1",
+        description="Base URL for Meta Model API endpoints",
+    )
+    MODEL_API_MODEL: str = Field(
+        default="muse-spark-1.3",
+        description="Default allowlisted model name",
+    )
+    MODEL_API_ENABLED: bool = Field(
+        default=False,
+        description="Global kill-switch for Meta Model API gateway (disabled by default)",
+    )
+    MODEL_API_LIFETIME_BUDGET_USD: float = Field(
+        default=100.0,
+        ge=0.0,
+        description="Hard lifetime spending cap in USD across all requests",
+    )
+    MODEL_API_DAILY_BUDGET_USD: float = Field(
+        default=5.0,
+        ge=0.0,
+        description="Hard daily spending cap in USD for any rolling 24-hour UTC window",
+    )
+    MODEL_API_INITIAL_TEST_BUDGET_USD: float = Field(
+        default=5.0,
+        ge=0.0,
+        description="Initial testing phase budget cap in USD",
+    )
+    MODEL_API_MAX_REQUEST_COST_USD: float = Field(
+        default=0.10,
+        ge=0.0,
+        description="Maximum allowed cost in USD for a single request reservation",
+    )
+    MODEL_API_MAX_INPUT_TOKENS: int = Field(
+        default=20000,
+        ge=1,
+        description="Hard limit on input tokens per request",
+    )
+    MODEL_API_MAX_OUTPUT_TOKENS: int = Field(
+        default=3000,
+        ge=1,
+        description="Hard limit on reserved output tokens per request",
+    )
+    MODEL_API_MAX_CONCURRENT_REQUESTS: int = Field(
+        default=1,
+        ge=1,
+        le=5,
+        description="Maximum concurrent in-flight requests permitted (strictly 1 initially)",
+    )
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: object) -> List[str]:

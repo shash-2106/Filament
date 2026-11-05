@@ -1,6 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="4" fill="#302333"/>
-  <path d="M16 6C16 6 12 12 12 18C12 21.3137 14.6863 24 18 24C21.3137 24 24 21.3137 24 18C24 12 16 6 16 6Z" fill="#B86F4B"/>
-  <circle cx="16" cy="18" r="3" fill="#F1EBDD"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="flGrad" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7FDD9D" stop-opacity="0.95"/>
+      <stop offset="50%" stop-color="#58B985" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#A4E8B8" stop-opacity="0.85"/>
+    </linearGradient>
+    <radialGradient id="flGlow" cx="32" cy="32" r="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7FDD9D" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#7FDD9D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
 
+  <!-- Deep Green Graphite Canvas -->
+  <rect width="64" height="64" rx="12" fill="#14231D" stroke="#294537" stroke-width="1.5"/>
+  <circle cx="32" cy="32" r="20" fill="url(#flGlow)"/>
+
+  <!-- Neural Spine -->
+  <path d="M20 14 L20 50" stroke="#58B985" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Top branch -->
+  <path d="M20 18 C28 18, 36 14, 48 16" stroke="url(#flGrad)" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Middle branch -->
+  <path d="M20 32 C28 32, 34 30, 42 34" stroke="url(#flGrad)" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Synaptic bridges -->
+  <path d="M20 32 C30 26, 36 22, 48 16" stroke="#7FDD9D" stroke-width="1.5" stroke-dasharray="2 3" opacity="0.6"/>
+  <path d="M20 50 C28 46, 34 40, 42 34" stroke="#7FDD9D" stroke-width="1.5" stroke-dasharray="2 3" opacity="0.6"/>
+
+  <!-- Phosphor Nodes -->
+  <circle cx="20" cy="18" r="3.5" fill="#7FDD9D" stroke="#14231D" stroke-width="1.5"/>
+  <circle cx="48" cy="16" r="3.5" fill="#A4E8B8" stroke="#14231D" stroke-width="1.5"/>
+  <circle cx="20" cy="32" r="3.5" fill="#58B985" stroke="#14231D" stroke-width="1.5"/>
+  <circle cx="42" cy="34" r="3.5" fill="#7FDD9D" stroke="#14231D" stroke-width="1.5"/>
+  <circle cx="20" cy="50" r="3.5" fill="#58B985" stroke="#14231D" stroke-width="1.5"/>
+</svg>

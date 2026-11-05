@@ -10,9 +10,11 @@ import {
   Activity,
   Server,
   Key,
+  BookOpen,
 } from 'lucide-react';
 import { useHealthQuery } from '../../api/queries';
 import { useAuth } from '../../context/auth';
+import { FilamentLogo } from '../brand/FilamentLogo';
 
 interface NavItem {
   to: string;
@@ -23,115 +25,113 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: '/', label: 'Overview', icon: Compass },
-  { to: '/memory', label: 'Memory', icon: Database },
-  { to: '/evidence', label: 'Evidence', icon: ShieldCheck },
-  { to: '/dependencies', label: 'Dependencies', icon: GitFork },
-  { to: '/agents', label: 'Agents', icon: Bot },
+  { to: '/guide', label: 'Interactive Guide', icon: BookOpen, badge: 'Tour' },
+  { to: '/memory', label: 'Memories', icon: Database },
+  { to: '/evidence', label: 'Supporting Evidence', icon: ShieldCheck },
+  { to: '/dependencies', label: 'Memory Connections', icon: GitFork },
+  { to: '/agents', label: 'Connected AI Agents', icon: Bot },
   { to: '/integrations', label: 'Integrations', icon: Layers },
-  { to: '/activity', label: 'Activity', icon: Activity },
+  { to: '/activity', label: 'Activity History', icon: Activity },
 ];
 
 export const Navigation: React.FC = () => {
-  const { data: health, isSuccess, isError } = useHealthQuery();
+  const { isSuccess, isError } = useHealthQuery();
   const { apiKey } = useAuth();
 
   return (
-    <aside className="w-64 bg-aubergine-deep text-parchment-light border-r border-aubergine-border flex flex-col flex-shrink-0 h-screen select-none">
-      {/* Brand & Editorial Instrument Masthead */}
-      <div className="p-5 border-b border-aubergine-border/80">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-sm bg-copper flex items-center justify-center text-parchment-light font-editorial font-bold text-base shadow-sm">
-            F
-          </div>
+    <aside className="w-60 bg-[#0E1714] text-graphite-text border-r border-[#294537] flex flex-col flex-shrink-0 h-screen select-none relative z-40">
+      {/* Brand & Technical Instrument Header */}
+      <div className="p-4 border-b border-[#294537]">
+        <NavLink to="/welcome" className="flex items-center gap-2.5 group">
+          <FilamentLogo size="md" animated={true} />
           <div>
-            <h1 className="font-editorial text-xl font-medium tracking-wide text-parchment-light leading-none">
+            <h1 className="font-heading text-base font-semibold tracking-wider text-graphite-text leading-none group-hover:text-phosphor transition-colors">
               FILAMENT
             </h1>
-            <p className="text-[11px] font-mono tracking-wider text-aubergine-text-muted uppercase mt-1">
+            <p className="text-[10px] font-mono tracking-widest text-graphite-text-tertiary uppercase mt-1">
               Governed Agent Memory
             </p>
           </div>
-        </div>
+        </NavLink>
       </div>
 
       {/* Navigation Sections */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        <div className="px-3 pb-2 text-[10px] font-mono font-medium tracking-widest text-aubergine-text-muted uppercase">
+      <nav className="flex-1 px-2.5 py-4 space-y-0.5 overflow-y-auto">
+        <div className="px-2.5 pb-2 text-[10px] font-mono font-medium tracking-widest text-graphite-text-tertiary uppercase">
           Workstation
         </div>
+
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
               className={({ isActive }) =>
-                `flex items-center justify-between px-3 py-2 text-sm font-sans rounded-sm transition-all group ${
+                `flex items-center justify-between px-2.5 py-2 rounded text-xs font-sans transition-all group ${
                   isActive
-                    ? 'bg-copper text-parchment-light font-medium shadow-xs'
-                    : 'text-parchment-light/80 hover:bg-aubergine-surface hover:text-parchment-light'
+                    ? 'bg-[#1C3027] text-phosphor font-medium border border-phosphor-border shadow-xs'
+                    : 'text-graphite-text-secondary hover:bg-[#14231D] hover:text-graphite-text border border-transparent'
                 }`
               }
             >
-              {({ isActive }) => (
-                <>
-                  <div className="flex items-center gap-2.5">
-                    <Icon
-                      className={`w-4 h-4 transition-colors ${
-                        isActive ? 'text-parchment-light' : 'text-aubergine-text-muted group-hover:text-copper-light'
-                      }`}
-                    />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge && (
-                    <span
-                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded-sm ${
-                        isActive
-                          ? 'bg-parchment/20 text-parchment-light'
-                          : 'bg-aubergine-surface text-stone border border-aubergine-border'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </>
+              <div className="flex items-center gap-2.5">
+                <Icon className="w-4 h-4 flex-shrink-0 text-inherit transition-transform group-hover:scale-105" />
+                <span>{item.label}</span>
+              </div>
+              {item.badge && (
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#14231D] text-phosphor border border-[#294537]">
+                  {item.badge}
+                </span>
               )}
             </NavLink>
           );
         })}
       </nav>
 
-      {/* Technical Footer & Connection Telemetry */}
-      <div className="p-3.5 border-t border-aubergine-border bg-aubergine text-xs font-mono space-y-2">
-        <div className="flex items-center justify-between text-aubergine-text-muted">
-          <span className="flex items-center gap-1.5">
-            <Server className="w-3.5 h-3.5" />
+      {/* Telemetry Footer Status */}
+      <div className="p-3.5 border-t border-[#294537] bg-[#0B1210] space-y-2.5 text-xs font-mono">
+        {/* Gateway connection indicator */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-graphite-text-tertiary">
+            <Server className="w-3.5 h-3.5 text-phosphor" />
             <span>Gateway API</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isSuccess ? 'bg-sage' : isError ? 'bg-terracotta' : 'bg-citron animate-pulse'
-              }`}
-            />
-            <span className="text-[11px] text-parchment-light/90">
-              {isSuccess ? health?.status || 'connected' : isError ? 'offline' : 'connecting'}
+          </div>
+          {isSuccess && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-phosphor font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-phosphor animate-pulse" />
+              healthy
             </span>
-          </span>
+          )}
+          {isError && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-[#A96580]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#A96580]" />
+              offline
+            </span>
+          )}
+          {!isSuccess && !isError && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-graphite-text-tertiary">
+              <span className="w-1.5 h-1.5 rounded-full bg-graphite-text-tertiary animate-pulse" />
+              connecting
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center justify-between pt-1 text-[11px] text-aubergine-text-muted border-t border-aubergine-border/60">
-          <span className="flex items-center gap-1">
-            <Key className="w-3 h-3 text-copper-light" />
-            <span>Auth</span>
-          </span>
-          <span className="text-parchment-light/80">
-            {apiKey ? `${apiKey.slice(0, 7)}...` : 'No key set'}
+        {/* Auth status indicator */}
+        <div className="flex items-center justify-between pt-1 border-t border-[#1C3027]">
+          <div className="flex items-center gap-1.5 text-graphite-text-tertiary">
+            <Key className="w-3.5 h-3.5 text-phosphor-secondary" />
+            <span>Agent Key</span>
+          </div>
+          <span
+            className={`text-[11px] ${
+              apiKey ? 'text-phosphor font-medium' : 'text-[#E5B45E]'
+            }`}
+          >
+            {apiKey ? 'AUTHENTICATED' : 'ANONYMOUS'}
           </span>
         </div>
       </div>
     </aside>
   );
 };
-

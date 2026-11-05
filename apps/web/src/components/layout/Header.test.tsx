@@ -17,7 +17,7 @@ describe('Header Component', () => {
   it('renders search input for claims and memories', () => {
     renderWithProviders(<Header />);
 
-    const searchInput = screen.getByPlaceholderText(/Search claims, evidence hashes/i);
+    const searchInput = screen.getByPlaceholderText(/Search memories, evidence hashes/i);
     expect(searchInput).toBeInTheDocument();
   });
 

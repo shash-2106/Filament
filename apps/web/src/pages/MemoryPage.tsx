@@ -1,26 +1,39 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Database,
   Search,
   RefreshCw,
+  Plus,
+  Filter,
   Sparkles,
+  GitFork,
+  ExternalLink,
 } from 'lucide-react';
-import { useClaimsQuery } from '../api/queries';
-import { useAuth } from '../context/auth';
+import { useClaimsQuery, useCreateClaimMutation } from '../api/queries';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { EmptyState } from '../components/common/EmptyState';
 import { ClaimDrawer } from '../components/memory/ClaimDrawer';
+import { ExtractMemoriesModal } from '../components/memory/ExtractMemoriesModal';
 
 export const MemoryPage: React.FC = () => {
-  const { isConfigured } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedClaimId = searchParams.get('claim');
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showExtractModal, setShowExtractModal] = useState(false);
+  const [newSubject, setNewSubject] = useState('');
+  const [newPredicate, setNewPredicate] = useState('configured_with');
+  const [newStatement, setNewStatement] = useState('');
+  const [newType, setNewType] = useState('fact');
+  const [newScope, setNewScope] = useState('team');
+  const [newObjectVal, setNewObjectVal] = useState('{}');
+
+  const createMutation = useCreateClaimMutation();
 
   const {
     data: claims,
@@ -53,209 +66,356 @@ export const MemoryPage: React.FC = () => {
     setSearchParams({});
   };
 
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubject.trim() || !newStatement.trim()) return;
+
+    let parsedVal = {};
+    try {
+      parsedVal = JSON.parse(newObjectVal);
+    } catch {
+      parsedVal = { raw: newObjectVal };
+    }
+
+    createMutation.mutate(
+      {
+        claim_type: newType,
+        subject: newSubject.trim(),
+        predicate: newPredicate.trim(),
+        object_value: parsedVal,
+        raw_statement: newStatement.trim(),
+        scope: newScope,
+        confidence: 1.0,
+      },
+      {
+        onSuccess: () => {
+          setShowCreateModal(false);
+          setNewSubject('');
+          setNewStatement('');
+          setNewObjectVal('{}');
+        },
+      }
+    );
+  };
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-in fade-in duration-200">
+    <div className="space-y-5">
       {/* Page Header */}
-      <div className="border-b border-stone-border pb-5 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[#294537]">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-copper uppercase tracking-wider mb-1.5 font-medium">
-            <span className="w-2 h-2 rounded-full bg-copper inline-block" />
-            <span>Memory Browser</span>
+          <div className="flex items-center gap-2">
+            <h1 className="font-heading text-2xl font-bold tracking-tight text-graphite-text">
+              Workspace Memories
+            </h1>
+            <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#1C3027] text-phosphor border border-[#294537]">
+              {claims ? `${claims.length} Governed` : 'Loading...'}
+            </span>
           </div>
-          <h1 className="font-editorial text-3xl text-aubergine font-normal">
-            Governed Memory Ledger
-          </h1>
-          <p className="text-sm text-stone-muted mt-1 font-sans max-w-2xl">
-            Audit, inspect, and evaluate immutable claim assertions, condition versions, and evidentiary lineages.
+          <p className="text-xs text-graphite-text-secondary mt-1 font-sans">
+            Condition-bound knowledge, decisions, and constraints actively audited against environmental drift.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Primary Actions */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowExtractModal(true)}
+            icon={<Sparkles className="w-3.5 h-3.5" />}
+          >
+            Extract with Muse Spark
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowCreateModal(true)}
+            icon={<Plus className="w-3.5 h-3.5 text-phosphor" />}
+          >
+            Record Memory
+          </Button>
+
           <Button
             variant="secondary"
             size="sm"
             onClick={() => refetch()}
             disabled={isFetching}
-            icon={<RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />}
+            icon={<RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-phosphor' : ''}`} />}
+            title="Refresh memory store"
           >
-            Refresh Ledger
+            Refresh
           </Button>
         </div>
       </div>
 
-      {/* Filter and Control Bar */}
-      <div className="p-3 bg-parchment-light border border-stone-border rounded-sm flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* Search Input */}
-        <div className="relative w-full md:w-80">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-muted" />
+      {/* Filter and Search Bar */}
+      <div className="bg-[#14231D] border border-[#294537] rounded p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+          <Search className="w-4 h-4 text-graphite-text-tertiary" />
           <input
             type="text"
-            placeholder="Filter by subject, predicate or text..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-parchment border border-stone-border rounded-sm py-1.5 pl-8 pr-3 text-xs font-sans text-aubergine placeholder:text-stone-muted focus:outline-none focus:border-copper"
+            placeholder="Search by statement, subject or predicate..."
+            className="w-full bg-[#0B1210] border border-[#294537] rounded px-3 py-1.5 text-xs text-graphite-text placeholder:text-graphite-text-tertiary focus:outline-none focus:border-phosphor"
           />
         </div>
 
-        {/* Filter Dropdowns */}
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          {/* Status Filter */}
-          <div className="flex items-center gap-1.5 text-xs font-mono text-aubergine">
-            <span className="text-stone-muted">Status:</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 font-mono text-[11px] text-graphite-text-tertiary">
+            <Filter className="w-3.5 h-3.5 text-phosphor" />
+            <span>STATUS:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-parchment border border-stone-border rounded-sm py-1 px-2 text-xs font-mono text-aubergine focus:outline-none focus:border-copper cursor-pointer"
+              className="bg-[#0B1210] border border-[#294537] rounded px-2 py-1 text-xs text-graphite-text focus:outline-none focus:border-phosphor font-mono"
             >
-              <option value="all">All States</option>
-              <option value="current">Current (Verified)</option>
-              <option value="needs_review">Needs Review</option>
+              <option value="all">All Statuses</option>
+              <option value="current">Current (Applicable)</option>
+              <option value="needs_review">Needs Review (Drifted)</option>
               <option value="disputed">Disputed</option>
               <option value="superseded">Superseded</option>
-              <option value="retracted">Retracted</option>
             </select>
           </div>
 
-          {/* Type Filter */}
-          <div className="flex items-center gap-1.5 text-xs font-mono text-aubergine">
-            <span className="text-stone-muted">Type:</span>
+          <div className="flex items-center gap-1.5 font-mono text-[11px] text-graphite-text-tertiary">
+            <span>TYPE:</span>
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-parchment border border-stone-border rounded-sm py-1 px-2 text-xs font-mono text-aubergine focus:outline-none focus:border-copper cursor-pointer"
+              className="bg-[#0B1210] border border-[#294537] rounded px-2 py-1 text-xs text-graphite-text focus:outline-none focus:border-phosphor font-mono"
             >
               <option value="all">All Types</option>
               <option value="fact">Fact</option>
-              <option value="recommendation">Recommendation</option>
               <option value="decision">Decision</option>
-              <option value="preference">Preference</option>
               <option value="constraint">Constraint</option>
+              <option value="recommendation">Recommendation</option>
+              <option value="preference">Preference</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* Claims Ledger Table */}
-      <div className="bg-parchment-light border border-stone-border rounded-sm overflow-hidden">
-        {!isConfigured ? (
-          <div className="py-16 text-center text-xs font-mono text-stone-muted space-y-2">
-            <div className="font-medium text-aubergine">Authentication Required</div>
-            <div>Configure an authorized Agent Bearer token in the header controls to inspect this workspace.</div>
-          </div>
-        ) : isLoading ? (
-          <div className="py-16 text-center text-xs font-mono text-stone-muted animate-pulse">
-            Querying immutable claims ledger...
-          </div>
-        ) : isError ? (
-          <div className="p-8 text-center text-xs font-mono text-terracotta space-y-2">
-            <div>Failed to load claims: {error?.message}</div>
-            <div className="text-stone-muted">Ensure an authorized Agent API key is configured.</div>
-          </div>
-        ) : filteredClaims && filteredClaims.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-stone-border bg-parchment/80 text-[11px] font-mono uppercase tracking-wider text-stone-muted">
-                  <th className="py-2.5 px-4 font-medium">Type</th>
-                  <th className="py-2.5 px-4 font-medium">Subject & Predicate</th>
-                  <th className="py-2.5 px-4 font-medium">Assertion Summary</th>
-                  <th className="py-2.5 px-4 font-medium">Status</th>
-                  <th className="py-2.5 px-4 font-medium">Scope</th>
-                  <th className="py-2.5 px-4 font-medium">Condition Set</th>
-                  <th className="py-2.5 px-4 font-medium text-right">Version</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-border/60 text-xs">
-                {filteredClaims.map((claim) => {
-                  const isSelected = claim.id === selectedClaimId;
-                  return (
-                    <tr
-                      key={claim.id}
-                      onClick={() => handleSelectClaim(claim.id)}
-                      className={`cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-copper-tint/50 border-l-2 border-l-copper'
-                          : 'hover:bg-parchment/60'
-                      }`}
+      {/* Main Memory Table */}
+      {isLoading ? (
+        <div className="bg-[#14231D] border border-[#294537] rounded p-12 text-center text-xs font-mono text-graphite-text-tertiary animate-pulse">
+          Loading governed memory store from Supabase...
+        </div>
+      ) : isError ? (
+        <div className="bg-[#14231D] border border-[#A96580] rounded p-6 text-center text-xs space-y-2">
+          <div className="text-[#A96580] font-semibold font-mono">Failed to load memories</div>
+          <div className="text-graphite-text-secondary font-mono">{String(error)}</div>
+          <Button variant="secondary" size="sm" onClick={() => refetch()}>
+            Retry Connection
+          </Button>
+        </div>
+      ) : filteredClaims && filteredClaims.length > 0 ? (
+        <div className="bg-[#14231D] border border-[#294537] rounded overflow-hidden shadow-xs">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="bg-[#111D18] border-b border-[#294537] font-mono text-[11px] text-graphite-text-tertiary uppercase tracking-wider">
+                <th className="py-2.5 px-4">Subject & Predicate</th>
+                <th className="py-2.5 px-4">Statement</th>
+                <th className="py-2.5 px-3">Type</th>
+                <th className="py-2.5 px-3">Status</th>
+                <th className="py-2.5 px-3">Condition Version</th>
+                <th className="py-2.5 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1F362B]">
+              {filteredClaims.map((claim) => (
+                <tr
+                  key={claim.id}
+                  onClick={() => handleSelectClaim(claim.id)}
+                  className={`cursor-pointer transition-colors ${
+                    selectedClaimId === claim.id
+                      ? 'bg-[#1C3027] border-l-2 border-l-phosphor'
+                      : 'hover:bg-[#192C23]'
+                  }`}
+                >
+                  <td className="py-3 px-4 font-mono">
+                    <div className="font-semibold text-graphite-text">{claim.subject}</div>
+                    <div className="text-[10px] text-graphite-text-tertiary">{claim.predicate}</div>
+                  </td>
+                  <td className="py-3 px-4 font-sans max-w-md">
+                    <p className="text-graphite-text line-clamp-2 leading-relaxed">
+                      {claim.raw_statement}
+                    </p>
+                  </td>
+                  <td className="py-3 px-3">
+                    <Badge variant="type" type={claim.claim_type}>
+                      {claim.claim_type}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-3">
+                    <Badge variant="status" status={claim.status}>
+                      {claim.status}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-3 font-mono text-[11px] text-graphite-text-secondary">
+                    {claim.active_condition_version ? (
+                      <span className="flex items-center gap-1 text-phosphor">
+                        <GitFork className="w-3 h-3 text-phosphor" />
+                        v{claim.version} (req: v{claim.active_condition_version})
+                      </span>
+                    ) : (
+                      <span className="text-graphite-text-tertiary">v{claim.version} (unbound)</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectClaim(claim.id);
+                      }}
+                      icon={<ExternalLink className="w-3 h-3 text-phosphor" />}
                     >
-                      {/* Type Badge */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <Badge type={claim.claim_type} />
-                      </td>
+                      Inspect
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <EmptyState
+          title="No Memories Found"
+          description="No memories match your active filter. Use Muse Spark extraction to parse conversation transcripts into candidate memories."
+          actionLabel="Extract with Muse Spark"
+          onAction={() => setShowExtractModal(true)}
+        />
+      )}
 
-                      {/* Subject & Predicate */}
-                      <td className="py-3 px-4 whitespace-nowrap font-mono">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-aubergine">{claim.subject}</span>
-                          <span className="text-stone-muted">→</span>
-                          <span className="text-copper font-medium">{claim.predicate}</span>
-                        </div>
-                      </td>
+      {/* Slide-out Inspection Drawer */}
+      {selectedClaimId && (
+        <ClaimDrawer claimId={selectedClaimId} onClose={handleCloseDrawer} />
+      )}
 
-                      {/* Assertion Statement */}
-                      <td className="py-3 px-4 max-w-md font-sans">
-                        <p className="line-clamp-1 text-aubergine-light">
-                          {claim.raw_statement}
-                        </p>
-                      </td>
+      {/* Muse Extraction Modal */}
+      <ExtractMemoriesModal
+        isOpen={showExtractModal}
+        onClose={() => setShowExtractModal(false)}
+        onMemoryApproved={() => refetch()}
+      />
 
-                      {/* Status */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <Badge status={claim.status} />
-                      </td>
+      {/* Manual Memory Creation Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+          <div className="bg-[#14231D] border border-[#294537] rounded-md max-w-lg w-full p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-2 border-b border-[#294537]">
+              <h3 className="font-heading text-lg font-semibold text-graphite-text">
+                Record New Governed Memory
+              </h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-graphite-text-tertiary hover:text-graphite-text"
+              >
+                &times;
+              </button>
+            </div>
 
-                      {/* Scope */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <Badge scope={claim.scope} />
-                      </td>
+            <form onSubmit={handleCreateSubmit} className="space-y-3.5 text-xs font-sans">
+              <div>
+                <label className="block text-[11px] font-mono text-graphite-text-tertiary uppercase mb-1">
+                  Subject (Entity or Component)
+                </label>
+                <input
+                  type="text"
+                  value={newSubject}
+                  onChange={(e) => setNewSubject(e.target.value)}
+                  placeholder="e.g. pgvector_connection_pool"
+                  className="w-full bg-[#0B1210] border border-[#294537] rounded px-3 py-1.5 text-graphite-text font-mono focus:outline-none focus:border-phosphor"
+                  required
+                />
+              </div>
 
-                      {/* Condition Bound Status */}
-                      <td className="py-3 px-4 whitespace-nowrap font-mono">
-                        {claim.active_condition_version ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-citron/20 text-aubergine text-[11px] font-medium border border-citron-dark/30">
-                            <Sparkles className="w-2.5 h-2.5 text-copper" />
-                            set v{claim.active_condition_version}
-                          </span>
-                        ) : (
-                          <span className="text-stone-muted text-[11px]">—</span>
-                        )}
-                      </td>
+              <div>
+                <label className="block text-[11px] font-mono text-graphite-text-tertiary uppercase mb-1">
+                  Predicate
+                </label>
+                <input
+                  type="text"
+                  value={newPredicate}
+                  onChange={(e) => setNewPredicate(e.target.value)}
+                  placeholder="e.g. max_connections"
+                  className="w-full bg-[#0B1210] border border-[#294537] rounded px-3 py-1.5 text-graphite-text font-mono focus:outline-none focus:border-phosphor"
+                  required
+                />
+              </div>
 
-                      {/* Version & Action */}
-                      <td className="py-3 px-4 whitespace-nowrap text-right font-mono text-stone-muted">
-                        v{claim.version}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+              <div>
+                <label className="block text-[11px] font-mono text-graphite-text-tertiary uppercase mb-1">
+                  Human-Readable Statement
+                </label>
+                <textarea
+                  value={newStatement}
+                  onChange={(e) => setNewStatement(e.target.value)}
+                  rows={3}
+                  placeholder="State the assertion or decision clearly..."
+                  className="w-full bg-[#0B1210] border border-[#294537] rounded px-3 py-1.5 text-graphite-text focus:outline-none focus:border-phosphor"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-mono text-graphite-text-tertiary uppercase mb-1">
+                    Assertion Type
+                  </label>
+                  <select
+                    value={newType}
+                    onChange={(e) => setNewType(e.target.value)}
+                    className="w-full bg-[#0B1210] border border-[#294537] rounded px-2 py-1.5 text-graphite-text font-mono focus:outline-none focus:border-phosphor"
+                  >
+                    <option value="fact">Fact</option>
+                    <option value="decision">Decision</option>
+                    <option value="constraint">Constraint</option>
+                    <option value="recommendation">Recommendation</option>
+                    <option value="preference">Preference</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-mono text-graphite-text-tertiary uppercase mb-1">
+                    Scope
+                  </label>
+                  <select
+                    value={newScope}
+                    onChange={(e) => setNewScope(e.target.value)}
+                    className="w-full bg-[#0B1210] border border-[#294537] rounded px-2 py-1.5 text-graphite-text font-mono focus:outline-none focus:border-phosphor"
+                  >
+                    <option value="team">Team</option>
+                    <option value="workspace">Workspace</option>
+                    <option value="private">Private</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#294537]">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={createMutation.isPending}
+                >
+                  {createMutation.isPending ? 'Recording...' : 'Record Claim'}
+                </Button>
+              </div>
+            </form>
           </div>
-        ) : (
-          <EmptyState
-            icon={Database}
-            title="No Claims Found"
-            description={
-              searchQuery || statusFilter !== 'all' || typeFilter !== 'all'
-                ? 'No claims matched the applied filter criteria.'
-                : 'No memory assertions exist in this workspace yet.'
-            }
-            actionLabel={
-              searchQuery || statusFilter !== 'all' || typeFilter !== 'all'
-                ? 'Clear Filters'
-                : undefined
-            }
-            onAction={() => {
-              setSearchQuery('');
-              setStatusFilter('all');
-              setTypeFilter('all');
-            }}
-          />
-        )}
-      </div>
-
-      {/* Claim Detail Inspection Drawer */}
-      <ClaimDrawer claimId={selectedClaimId} onClose={handleCloseDrawer} />
+        </div>
+      )}
     </div>
   );
 };

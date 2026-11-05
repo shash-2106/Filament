@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/auth';
 import { WorkstationShell } from './components/layout/WorkstationShell';
+import { WelcomePage } from './pages/WelcomePage';
 import { OverviewPage } from './pages/OverviewPage';
 import { MemoryPage } from './pages/MemoryPage';
 import { EvidencePage } from './pages/EvidencePage';
@@ -10,6 +11,7 @@ import { DependenciesPage } from './pages/DependenciesPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { ActivityPage } from './pages/ActivityPage';
+import { GuidePage } from './pages/GuidePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,8 +28,14 @@ export const App: React.FC = () => {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            {/* Immersive Welcome / Landing Experience */}
+            <Route path="/welcome" element={<WelcomePage />} />
+
+            {/* Governed Workstation Shell */}
             <Route element={<WorkstationShell />}>
               <Route path="/" element={<OverviewPage />} />
+              <Route path="/overview" element={<OverviewPage />} />
+              <Route path="/guide" element={<GuidePage />} />
               <Route path="/memory" element={<MemoryPage />} />
               <Route path="/evidence" element={<EvidencePage />} />
               <Route path="/dependencies" element={<DependenciesPage />} />
@@ -42,4 +50,3 @@ export const App: React.FC = () => {
     </QueryClientProvider>
   );
 };
-

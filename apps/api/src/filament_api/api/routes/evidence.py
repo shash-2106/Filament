@@ -75,3 +75,38 @@ async def record_evidence(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": {"code": "INTERNAL_SERVER_ERROR", "message": "An internal server error occurred."}},
         ) from exc
+
+
+@router.get(
+    "/evidence",
+    response_model=list[EvidenceResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List Workspace Evidence",
+    description="Retrieves ingested immutable evidence snapshots for the caller's workspace.",
+)
+async def list_evidence(
+    source_type: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    context: TrustedContext = Depends(get_current_agent_context),
+    session: AsyncSession = Depends(get_db),
+) -> list[EvidenceResponse]:
+    """List evidence snapshots within caller's workspace."""
+    try:
+        from sqlalchemy import select
+        from filament_api.models.evidence import Evidence
+
+        stmt = select(Evidence).where(Evidence.workspace_id == context.workspace_id)
+        if source_type:
+            stmt = stmt.where(Evidence.source_type == source_type)
+        stmt = stmt.order_by(Evidence.created_at.desc()).limit(limit).offset(offset)
+
+        res = await session.execute(stmt)
+        records = res.scalars().all()
+        return [EvidenceResponse.model_validate(r) for r in records]
+    except Exception as exc:
+        log_safe_exception(logger, f"Error listing evidence for workspace {context.workspace_id}", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": {"code": "INTERNAL_SERVER_ERROR", "message": "An internal server error occurred."}},
+        ) from exc

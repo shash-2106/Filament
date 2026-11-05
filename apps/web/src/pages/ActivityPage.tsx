@@ -1,44 +1,114 @@
 import React from 'react';
-import { Activity, Lock } from 'lucide-react';
+import { Activity, Lock, Database, GitFork, ShieldCheck } from 'lucide-react';
+import { useAuditEventsQuery } from '../api/queries';
+import { useAuth } from '../context/auth';
 import { Card } from '../components/common/Card';
 import { EmptyState } from '../components/common/EmptyState';
 
 export const ActivityPage: React.FC = () => {
+  const { isConfigured } = useAuth();
+  const { data: auditEvents, isLoading, isError, error } = useAuditEventsQuery({ limit: 100 });
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-in fade-in duration-200">
+      {/* Header Banner */}
       <div className="border-b border-stone-border pb-5">
         <div className="flex items-center gap-2 text-xs font-mono text-copper uppercase tracking-wider mb-1.5 font-medium">
-          <span className="w-2 h-2 rounded-full bg-copper inline-block" />
+          <span className="w-2 h-2 rounded-full bg-copper inline-block animate-pulse" />
           <span>Governance Stream</span>
         </div>
-        <h1 className="font-editorial text-3xl text-aubergine font-normal">
-          Immutable Audit Trail
+        <h1 className="font-editorial text-3xl md:text-4xl text-charcoal font-normal">
+          Activity History
         </h1>
-        <p className="text-sm text-stone-muted mt-1 font-sans max-w-2xl">
-          Database-enforced append-only record of all claim establishments, condition changes, evidence links, and reverifications.
+        <p className="text-sm text-stone-muted mt-1 font-sans max-w-2xl leading-relaxed">
+          Append-only audit trail enforced by database triggers: recording every memory created, condition checked, evidence linked, and validity evaluated.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <Card title="Activity Stream">
-            <EmptyState
-              icon={Activity}
-              title="Audit Stream Endpoint Pending"
-              description="Audit events are strictly recorded on every state mutation and protected by the trg_protect_audit_events database trigger. An activity query endpoint (GET /api/v1/audit) is scheduled for the next milestone."
-              unconnectedNotice={true}
-            />
+        <div className="md:col-span-2 space-y-4">
+          <Card title="Workspace Audit Events">
+            {!isConfigured ? (
+              <EmptyState
+                icon={Activity}
+                title="Authentication Required"
+                description="Configure your Agent Bearer API key in the header to view the live workspace activity stream."
+              />
+            ) : isLoading ? (
+              <div className="py-24 text-center text-xs font-mono text-stone-muted animate-pulse">
+                Querying append-only audit trail...
+              </div>
+            ) : isError ? (
+              <div className="p-4 rounded-sm bg-terracotta/10 border border-terracotta/30 text-xs font-mono text-terracotta-dark">
+                Failed to load audit events: {error?.message}
+              </div>
+            ) : auditEvents && auditEvents.length > 0 ? (
+              <div className="divide-y divide-stone-border/60">
+                {auditEvents.map((event) => (
+                  <div key={event.id} className="py-3.5 first:pt-1 last:pb-1 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-medium text-copper uppercase text-[11px] px-1.5 py-0.5 rounded-sm bg-bone border border-stone-border">
+                          {event.event_type}
+                        </span>
+                        <span className="font-sans text-charcoal font-medium">
+                          {event.target_type}: <span className="font-mono text-stone-muted">{event.target_id.slice(0, 8)}...</span>
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-mono text-stone-muted">
+                        {new Date(event.created_at).toLocaleTimeString()} · {new Date(event.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] font-mono text-stone-muted flex items-center justify-between">
+                      <span>actor: {event.actor_id.slice(0, 8)}...</span>
+                      <span>event_id: {event.id.slice(0, 8)}...</span>
+                    </div>
+
+                    {event.payload && Object.keys(event.payload).length > 0 && (
+                      <pre className="p-2 rounded-sm bg-bone border border-stone-border/60 text-[10px] font-mono text-stone-muted overflow-x-auto">
+                        {JSON.stringify(event.payload, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Activity}
+                title="No Audit Events Recorded"
+                description="Audit events are automatically generated by database triggers upon memory creation, verification, or linking."
+              />
+            )}
           </Card>
         </div>
 
-        <div>
-          <Card title="Security Invariant">
-            <div className="flex items-start gap-2 text-xs text-stone-muted leading-relaxed font-sans">
+        {/* Sidebar Info */}
+        <div className="space-y-4">
+          <Card title="Database Invariant" subtitle="Security Guarantee">
+            <div className="flex items-start gap-2.5 text-xs text-charcoal leading-relaxed font-sans">
               <Lock className="w-4 h-4 text-copper flex-shrink-0 mt-0.5" />
               <span>
-                Filament audit logs are tamper-evident. Database triggers prevent any UPDATE or DELETE operations from modifying historical audit records.
+                <strong>Strict Immutability:</strong> Audit trail rows are protected by PostgreSQL trigger <code className="font-mono text-copper">filament_protect_audit_events</code>. Row deletions and updates are blocked unconditionally, ensuring permanent provenance.
               </span>
             </div>
+          </Card>
+
+          <Card title="Activity Scope" subtitle="Audit Ledger Coverage">
+            <ul className="space-y-2 text-xs text-stone-muted font-sans">
+              <li className="flex items-center gap-2">
+                <Database className="w-3.5 h-3.5 text-copper" />
+                <span>Memory assertions and version increments</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-brass" />
+                <span>Evidence creation and linking</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <GitFork className="w-3.5 h-3.5 text-sage" />
+                <span>Relationship established & cascaded</span>
+              </li>
+            </ul>
           </Card>
         </div>
       </div>

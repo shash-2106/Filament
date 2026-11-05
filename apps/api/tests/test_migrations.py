@@ -20,10 +20,10 @@ def alembic_config() -> Config:
 
 
 def test_migration_revisions_discovery(alembic_config: Config) -> None:
-    """Verifies that Alembic script directory discovers all revisions up to Supabase RLS."""
+    """Verifies that Alembic script directory discovers all revisions up to model usage ledger."""
     script = ScriptDirectory.from_config(alembic_config)
     head_revision = script.get_current_head()
-    assert head_revision == "20261103_0004"
+    assert head_revision == "20261104_0005"
 
     # Revision 1: initial schema
     rev1 = script.get_revision("20261029_0001")
@@ -47,6 +47,11 @@ def test_migration_revisions_discovery(alembic_config: Config) -> None:
     rev4 = script.get_revision("20261103_0004")
     assert rev4 is not None
     assert rev4.down_revision == "20261101_0003"
+
+    # Revision 5: Model usage ledger
+    rev5 = script.get_revision("20261104_0005")
+    assert rev5 is not None
+    assert rev5.down_revision == "20261103_0004"
 
 
 def test_second_migration_source_contains_unique_constraint(alembic_config: Config) -> None:

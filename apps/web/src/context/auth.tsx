@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getStoredApiKey, setStoredApiKey } from '../api/client';
+import { useCurrentWorkspaceQuery } from '../api/queries';
 
 interface WorkspaceContextType {
   apiKey: string;
@@ -7,24 +8,18 @@ interface WorkspaceContextType {
   workspaceId: string;
   workspaceName: string;
   workspaceSlug: string;
-  setWorkspace: (ws: { id: string; name: string; slug: string }) => void;
+  currentAgentName?: string;
+  currentAgentId?: string;
   isConfigured: boolean;
+  isLoading: boolean;
 }
-
-const defaultWorkspace = {
-  id: '00000000-0000-0000-0000-000000000001',
-  name: 'Default Workspace',
-  slug: 'default-workspace',
-};
 
 const AuthContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string>(getStoredApiKey());
-  const [workspace, setWorkspace] = useState(defaultWorkspace);
 
   useEffect(() => {
-    // If not set, check if an agent key was stored
     const existing = getStoredApiKey();
     if (existing) {
       setApiKeyState(existing);
@@ -36,16 +31,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setApiKeyState(key.trim());
   };
 
+  const { data: wsDetail, isLoading } = useCurrentWorkspaceQuery();
+
   return (
     <AuthContext.Provider
       value={{
         apiKey,
         setApiKey: handleSetApiKey,
-        workspaceId: workspace.id,
-        workspaceName: workspace.name,
-        workspaceSlug: workspace.slug,
-        setWorkspace,
+        workspaceId: wsDetail?.id || '',
+        workspaceName: wsDetail?.name || 'Workspace Disconnected',
+        workspaceSlug: wsDetail?.slug || 'none',
+        currentAgentName: wsDetail?.current_agent?.name,
+        currentAgentId: wsDetail?.current_agent?.id,
         isConfigured: Boolean(apiKey),
+        isLoading,
       }}
     >
       {children}
@@ -60,4 +59,3 @@ export function useAuth() {
   }
   return context;
 }
-

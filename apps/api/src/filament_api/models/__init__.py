@@ -9,6 +9,7 @@ from filament_api.models.condition import (
     ClaimVerification,
 )
 from filament_api.models.evidence import Evidence
+from filament_api.models.model_usage import ModelUsageRecord
 from filament_api.models.relation import ClaimRelation
 from filament_api.models.snapshot import EnvironmentSnapshot
 from filament_api.models.user import User
@@ -25,6 +26,7 @@ __all__ = [
     "ClaimVerification",
     "EnvironmentSnapshot",
     "Evidence",
+    "ModelUsageRecord",
     "User",
     "Workspace",
 ]

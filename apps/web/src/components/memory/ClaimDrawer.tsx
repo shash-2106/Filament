@@ -2,259 +2,191 @@ import React, { useState } from 'react';
 import {
   X,
   ShieldCheck,
-  Copy,
-  Check,
-  Sparkles,
+  GitFork,
+  FileText,
+  Activity,
+  Play,
 } from 'lucide-react';
 import { useClaimDetailQuery, useEvaluateClaimMutation } from '../../api/queries';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
 
 interface ClaimDrawerProps {
-  claimId: string | null;
+  claimId: string;
   onClose: () => void;
 }
 
 export const ClaimDrawer: React.FC<ClaimDrawerProps> = ({ claimId, onClose }) => {
-  const { data: detail, isLoading, isError, error } = useClaimDetailQuery(claimId);
-  const claim = detail?.claim;
-  const evidenceLinks = detail?.evidence || [];
+  const { data, isLoading, isError, refetch } = useClaimDetailQuery(claimId);
   const evaluateMutation = useEvaluateClaimMutation();
-  const [copied, setCopied] = useState(false);
-  const [snapshotInput, setSnapshotInput] = useState('');
-  const [showEvalInput, setShowEvalInput] = useState(false);
+  const [evalResult, setEvalResult] = useState<any | null>(null);
 
-  if (!claimId) return null;
-
-  const handleCopyId = () => {
-    if (claimId) {
-      navigator.clipboard.writeText(claimId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleEvaluate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!snapshotInput.trim() || !claimId) return;
-    evaluateMutation.mutate({
-      claimId,
-      snapshotId: snapshotInput.trim(),
-    });
+  const handleEvaluate = () => {
+    evaluateMutation.mutate(
+      { claimId, snapshotId: 'current' },
+      {
+        onSuccess: (res) => {
+          setEvalResult(res);
+          refetch();
+        },
+      }
+    );
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-40 w-full max-w-xl bg-parchment-light border-l border-stone-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-[#0E1714] border-l border-[#294537] shadow-2xl flex flex-col select-none">
       {/* Drawer Header */}
-      <div className="p-5 border-b border-stone-border bg-parchment/70 flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            {claim && (
-              <>
-                <Badge type={claim.claim_type} />
-                <Badge status={claim.status} />
-                <Badge scope={claim.scope} />
-              </>
-            )}
-          </div>
-          <h2 className="font-editorial text-2xl text-aubergine font-normal truncate">
-            {claim?.subject || 'Claim Inspection'}
+      <div className="p-4 border-b border-[#294537] flex items-center justify-between bg-[#14231D]">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-phosphor" />
+          <h2 className="font-heading text-sm font-bold text-graphite-text">
+            Memory Inspection & Provenance
           </h2>
-          <div className="flex items-center gap-2 text-xs font-mono text-stone-muted mt-1">
-            <span className="text-copper font-medium">{claim?.predicate}</span>
-            <span>•</span>
-            <button
-              onClick={handleCopyId}
-              className="hover:text-aubergine flex items-center gap-1 cursor-pointer transition-colors"
-              title="Copy UUID"
-            >
-              <span>{claimId.slice(0, 8)}...</span>
-              {copied ? <Check className="w-3 h-3 text-sage" /> : <Copy className="w-3 h-3" />}
-            </button>
-          </div>
         </div>
-
         <button
           onClick={onClose}
-          className="p-1 rounded-sm text-stone-muted hover:text-aubergine hover:bg-stone/30 transition-colors cursor-pointer"
+          className="text-graphite-text-tertiary hover:text-graphite-text p-1 rounded hover:bg-[#1C3027] transition-colors"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Drawer Body */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="p-5 overflow-y-auto flex-1 space-y-6 text-xs bg-[#0B1210]">
         {isLoading ? (
-          <div className="py-16 text-center text-xs font-mono text-stone-muted animate-pulse">
-            Retrieving claim assertion and evidence linkages...
+          <div className="p-8 text-center font-mono text-graphite-text-tertiary animate-pulse">
+            Loading memory telemetry from Supabase...
           </div>
-        ) : isError ? (
-          <div className="p-4 rounded-sm bg-terracotta/10 border border-terracotta/30 text-xs font-mono text-terracotta-dark">
-            Failed to load claim detail: {error?.message || 'Entity not found or unauthorized.'}
+        ) : isError || !data ? (
+          <div className="p-4 bg-[#A96580]/15 border border-[#A96580]/40 rounded text-[#A96580] font-mono">
+            Failed to load memory inspection details.
           </div>
-        ) : claim ? (
+        ) : (
           <>
-            {/* Raw Statement Banner */}
-            <div className="p-4 rounded-sm bg-parchment border border-stone-border/80">
-              <span className="block text-[10px] font-mono uppercase tracking-wider text-stone-muted mb-1.5">
-                Statement
-              </span>
-              <p className="font-editorial text-lg text-aubergine leading-snug italic">
-                "{claim.raw_statement}"
-              </p>
-            </div>
-
-            {/* Structured Object Value */}
-            <div>
-              <span className="block text-xs font-mono uppercase tracking-wider text-aubergine mb-2 font-medium">
-                Structured Value
-              </span>
-              <div className="p-3 bg-aubergine-deep text-parchment-light rounded-sm font-mono text-xs overflow-x-auto border border-aubergine-border">
-                <pre>{JSON.stringify(claim.object_value, null, 2)}</pre>
-              </div>
-            </div>
-
-            {/* Condition Governance Status */}
-            <div className="p-4 rounded-sm bg-stone-light/30 border border-stone-border space-y-3">
-              <div className="flex items-center justify-between">
+            {/* Primary Statement Card */}
+            <div className="p-4 rounded bg-[#14231D] border border-[#294537] space-y-3">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-copper" />
-                  <span className="font-sans text-sm font-medium text-aubergine">
-                    Condition-Bound Validity
-                  </span>
+                  <Badge variant="type" type={data.claim.claim_type}>
+                    {data.claim.claim_type}
+                  </Badge>
+                  <Badge variant="status" status={data.claim.status}>
+                    {data.claim.status}
+                  </Badge>
                 </div>
-                <Badge variant="citron">
-                  {claim.active_condition_version
-                    ? `Set v${claim.active_condition_version}`
-                    : 'Unconditioned'}
-                </Badge>
+                <span className="font-mono text-[10px] text-graphite-text-tertiary">
+                  ID: {data.claim.id.slice(0, 8)}...
+                </span>
               </div>
 
-              <p className="text-xs text-stone-muted leading-relaxed">
-                {claim.active_condition_version
-                  ? `This assertion is bound to Condition Set version ${claim.active_condition_version}. It requires specific file hashes and package versions to remain applicable.`
-                  : 'This assertion does not have condition sets established yet. It is unconditioned.'}
-              </p>
+              <div>
+                <h3 className="font-mono text-xs text-phosphor font-semibold">
+                  {data.claim.subject} : {data.claim.predicate}
+                </h3>
+                <p className="mt-2 text-sm text-graphite-text font-sans leading-relaxed">
+                  {data.claim.raw_statement}
+                </p>
+              </div>
 
-              <div className="pt-2 border-t border-stone-border/60 flex items-center justify-between">
+              <div className="pt-2 border-t border-[#1C3027] flex items-center justify-between text-[11px] font-mono text-graphite-text-tertiary">
+                <span>Confidence: {(Number(data.claim.confidence) * 100).toFixed(0)}%</span>
+                <span>Scope: {data.claim.scope}</span>
+                <span>Version: v{data.claim.version}</span>
+              </div>
+            </div>
+
+            {/* Environmental Conditions & Verification Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-mono text-xs font-semibold uppercase tracking-wider text-graphite-text flex items-center gap-1.5">
+                  <GitFork className="w-3.5 h-3.5 text-phosphor" />
+                  <span>Validity Requirements & Evaluation</span>
+                </h4>
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => setShowEvalInput(!showEvalInput)}
-                  icon={<Sparkles className="w-3.5 h-3.5 text-copper" />}
+                  onClick={handleEvaluate}
+                  disabled={evaluateMutation.isPending}
+                  icon={<Play className={`w-3 h-3 text-phosphor ${evaluateMutation.isPending ? 'animate-spin' : ''}`} />}
                 >
-                  {showEvalInput ? 'Hide Evaluation Form' : 'Evaluate Against Snapshot'}
+                  {evaluateMutation.isPending ? 'Auditing...' : 'Evaluate Against Environment'}
                 </Button>
               </div>
 
-              {/* Transient Evaluation Input */}
-              {showEvalInput && (
-                <form onSubmit={handleEvaluate} className="pt-2 space-y-2">
-                  <label className="block text-[11px] font-mono text-aubergine">
-                    Target Environment Snapshot UUID
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
-                      value={snapshotInput}
-                      onChange={(e) => setSnapshotInput(e.target.value)}
-                      className="flex-1 bg-parchment border border-stone-border rounded-sm py-1 px-2.5 text-xs font-mono text-aubergine focus:outline-none focus:border-copper"
-                    />
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={evaluateMutation.isPending || !snapshotInput.trim()}
-                    >
-                      {evaluateMutation.isPending ? 'Evaluating...' : 'Run Check'}
-                    </Button>
+              <p className="text-xs text-graphite-text-secondary leading-relaxed font-sans">
+                Test whether this memory's environmental requirements are satisfied in current infrastructure.
+              </p>
+
+              {evalResult && (
+                <div className={`p-3 rounded border text-xs font-mono space-y-1 ${
+                  evalResult.outcome === 'applicable'
+                    ? 'bg-[#14231D] border-phosphor/50 text-phosphor'
+                    : 'bg-[#A96580]/15 border-[#A96580]/40 text-[#D67D65]'
+                }`}>
+                  <div className="font-bold flex items-center gap-1.5 uppercase">
+                    Outcome: {evalResult.outcome}
                   </div>
-
-                  {evaluateMutation.isError && (
-                    <div className="text-[11px] font-mono text-terracotta mt-1">
-                      {evaluateMutation.error?.message}
-                    </div>
-                  )}
-
-                  {evaluateMutation.isSuccess && (
-                    <div className="p-2.5 rounded-sm bg-parchment border border-stone-border text-xs font-mono mt-2 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-stone-muted">Evaluation Outcome:</span>
-                        <Badge outcome={evaluateMutation.data.outcome} />
-                      </div>
-                      <div className="text-[11px] text-stone-muted">
-                        Conditions checked: {evaluateMutation.data.condition_results?.length || 0}
-                      </div>
-                    </div>
-                  )}
-                </form>
+                  <div className="text-[11px] text-graphite-text-secondary">
+                    {evalResult.explanation || 'Verification completed against environment state.'}
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Linked Evidence Section */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-aubergine font-medium">
-                  <ShieldCheck className="w-4 h-4 text-copper" />
-                  <span>Linked Provenance Evidence ({evidenceLinks.length})</span>
-                </div>
-              </div>
+            {/* Cryptographic Evidence & Provenance Section */}
+            <div className="space-y-3">
+              <h4 className="font-mono text-xs font-semibold uppercase tracking-wider text-graphite-text flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-phosphor" />
+                <span>Supporting Evidence Provenance ({data.evidence?.length || 0})</span>
+              </h4>
 
-              {evidenceLinks.length > 0 ? (
-                <div className="space-y-2">
-                  {evidenceLinks.map((link) => (
+              {data.evidence && data.evidence.length > 0 ? (
+                <div className="space-y-2.5">
+                  {data.evidence.map((ev: any, idx: number) => (
                     <div
-                      key={link.evidence_id}
-                      className="p-3 bg-parchment rounded-sm border border-stone-border/80 space-y-1.5"
+                      key={ev.id || idx}
+                      className="p-3 bg-[#14231D] border border-[#294537] rounded space-y-2 font-mono text-[11px]"
                     >
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-mono text-aubergine font-medium truncate max-w-[200px]">
-                          {link.evidence_id}
+                      <div className="flex items-center justify-between text-graphite-text-tertiary">
+                        <span className="text-phosphor uppercase">
+                          Source: {ev.source_type}
                         </span>
-                        <span className="text-[11px] font-mono text-copper uppercase font-medium">
-                          {link.support_type} ({Math.round(link.confidence_weight * 100)}%)
+                        <span className="text-[10px]">
+                          {ev.created_at ? new Date(ev.created_at).toLocaleTimeString() : 'Verified'}
                         </span>
                       </div>
-                      {link.extraction_notes && (
-                        <p className="text-xs text-stone-muted font-sans">
-                          {link.extraction_notes}
-                        </p>
+
+                      {ev.raw_snippet && (
+                        <div className="p-2 bg-[#0B1210] border border-[#1C3027] rounded text-graphite-text italic">
+                          "{ev.raw_snippet}"
+                        </div>
                       )}
-                      <div className="flex items-center justify-between text-[11px] font-mono text-stone-muted pt-1 border-t border-stone-border/50">
-                        <span>source: {link.source_type || 'file'}</span>
-                        <span>{new Date(link.created_at).toLocaleDateString()}</span>
+
+                      <div className="text-[10px] text-graphite-text-tertiary truncate">
+                        URI: {ev.source_uri}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="p-4 rounded-sm border border-dashed border-stone-border text-center text-xs text-stone-muted font-sans">
-                  No evidence records linked to this claim.
+                <div className="p-3 bg-[#14231D] border border-[#294537] rounded text-center text-graphite-text-tertiary font-mono">
+                  No explicit evidence recorded for this claim.
                 </div>
               )}
             </div>
 
-            {/* Technical Metadata */}
-            <div className="p-4 rounded-sm bg-parchment-dark/30 border border-stone-border text-xs font-mono space-y-1.5 text-stone-muted">
-              <div className="flex items-center justify-between">
-                <span>Claim Version:</span>
-                <span className="text-aubergine font-medium">v{claim.version}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Confidence Score:</span>
-                <span className="text-aubergine font-medium">{claim.confidence}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Authoring Agent:</span>
-                <span className="text-aubergine truncate max-w-[240px]">{claim.agent_id}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Established Date:</span>
-                <span className="text-aubergine">{new Date(claim.created_at).toLocaleString()}</span>
-              </div>
+            {/* Technical Structured Payload */}
+            <div className="space-y-2">
+              <h4 className="font-mono text-xs font-semibold uppercase tracking-wider text-graphite-text flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-phosphor" />
+                <span>Structured Value</span>
+              </h4>
+              <pre className="p-3 bg-[#0B1210] border border-[#294537] rounded font-mono text-[11px] text-graphite-text overflow-x-auto">
+                {JSON.stringify(data.claim.object_value, null, 2)}
+              </pre>
             </div>
           </>
-        ) : null}
+        )}
       </div>
     </div>
   );

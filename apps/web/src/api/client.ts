@@ -9,6 +9,12 @@ import {
   ClaimEvaluationResponse,
   ConditionSetResponse,
   ApiResponseError,
+  WorkspaceDetail,
+  Agent,
+  Evidence,
+  ClaimRelation,
+  AuditEvent,
+  SnapshotResponse,
 } from './types';
 
 export class ApiError extends Error {
@@ -83,6 +89,15 @@ export const api = {
     return request<{ status: string; environment?: string }>('/health');
   },
 
+  // Workspaces & Current Agent
+  async getCurrentWorkspace(): Promise<WorkspaceDetail> {
+    return request<WorkspaceDetail>('/workspaces/current');
+  },
+
+  async listAgents(): Promise<Agent[]> {
+    return request<Agent[]>('/agents');
+  },
+
   // Claims & Memory
   async listClaims(params?: {
     status?: string;
@@ -119,7 +134,91 @@ export const api = {
     });
   },
 
+  // Evidence
+  async listEvidence(params?: { source_type?: string; limit?: number }): Promise<Evidence[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.source_type) searchParams.set('source_type', params.source_type);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    const qs = searchParams.toString();
+    return request<Evidence[]>(`/evidence${qs ? `?${qs}` : ''}`);
+  },
+
+  async recordEvidence(data: {
+    source_type: string;
+    source_uri: string;
+    raw_snippet: string;
+    content_hash?: string;
+    metadata?: Record<string, any>;
+  }): Promise<Evidence> {
+    return request<Evidence>('/evidence', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async linkEvidence(
+    claimId: string,
+    data: {
+      evidence_id: string;
+      support_type?: string;
+      confidence_weight?: number;
+      extraction_notes?: string;
+    }
+  ): Promise<any> {
+    return request<any>(`/claims/${claimId}/evidence`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Claim Relations
+  async listClaimRelations(relationType?: string): Promise<ClaimRelation[]> {
+    const qs = relationType ? `?relation_type=${encodeURIComponent(relationType)}` : '';
+    return request<ClaimRelation[]>(`/claim-relations${qs}`);
+  },
+
+  // Audit Events
+  async listAuditEvents(params?: { event_type?: string; limit?: number }): Promise<AuditEvent[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.event_type) searchParams.set('event_type', params.event_type);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    const qs = searchParams.toString();
+    return request<AuditEvent[]>(`/audit${qs ? `?${qs}` : ''}`);
+  },
+
+  // Snapshots
+  async recordSnapshot(data: {
+    source_ref: string;
+    source_type?: string;
+    scan_scope?: string;
+    snapshot_data: {
+      scanned_roots: string[];
+      files: Record<string, string>;
+      packages?: Record<string, any>;
+      runtime?: Record<string, any>;
+    };
+  }): Promise<SnapshotResponse> {
+    return request<SnapshotResponse>('/snapshots', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   // Conditions & Evaluation
+  async establishConditions(
+    claimId: string,
+    params: {
+      based_on_snapshot_id: string;
+      rationale: string;
+      conditions: any[];
+    }
+  ): Promise<ConditionSetResponse> {
+    return request<ConditionSetResponse>(`/claims/${claimId}/conditions`, {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
   async evaluateClaim(claimId: string, snapshotId: string): Promise<ClaimEvaluationResponse> {
     return request<ClaimEvaluationResponse>(`/claims/${claimId}/evaluate`, {
       method: 'POST',
@@ -144,26 +243,25 @@ export const api = {
     });
   },
 
-  async establishConditions(
-    claimId: string,
-    params: {
-      based_on_snapshot_id: string;
-      rationale: string;
-      conditions: any[];
-    }
-  ): Promise<ConditionSetResponse> {
-    return request<ConditionSetResponse>(`/claims/${claimId}/conditions`, {
+  // Memory Extraction
+  async estimateExtraction(data: { transcript: string }): Promise<any> {
+    return request<any>('/memory-extraction/estimate', {
       method: 'POST',
-      body: JSON.stringify(params),
+      body: JSON.stringify(data),
     });
   },
 
-  // Snapshots
-  async recordSnapshot(data: any): Promise<any> {
-    return request<any>('/snapshots', {
+  async extractMemories(data: { transcript: string; user_confirmed_cost: boolean }): Promise<any> {
+    return request<any>('/memory-extraction/extract', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async approveCandidate(data: any): Promise<any> {
+    return request<any>('/memory-extraction/approve', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 };
-

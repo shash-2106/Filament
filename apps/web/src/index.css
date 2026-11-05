@@ -1,76 +1,215 @@
 @import "tailwindcss";
 
 @theme {
-  --color-parchment: #F1EBDD;
-  --color-parchment-light: #F8F5EE;
-  --color-parchment-card: #EAE3D3;
-  --color-parchment-dark: #DFD5C0;
+  /* =========================================================================
+     FILAMENT "NEURAL GRAPHITE" DESIGN SYSTEM
+     Deep green-tinted graphite, phosphor green accents, technical typography
+     ========================================================================= */
 
-  --color-aubergine: #302333;
-  --color-aubergine-deep: #211723;
-  --color-aubergine-light: #443248;
-  --color-aubergine-surface: #382B3B;
-  --color-aubergine-border: #4D3B51;
-  --color-aubergine-text-muted: #8E7B92;
+  /* Neural Graphite Canvas & Elevated Surfaces */
+  --color-graphite: #0B1210;
+  --color-graphite-canvas: #0B1210;
+  --color-graphite-elevated: #14231D;
+  --color-graphite-secondary: #1C3027;
+  --color-graphite-surface: #14231D;
+  --color-graphite-card: #14231D;
+  --color-graphite-card-hover: #192C23;
+  --color-graphite-border: #294537;
+  --color-graphite-border-subtle: #1F362B;
+  --color-graphite-border-glow: #38604C;
+  --color-graphite-glass: rgba(20, 35, 29, 0.85);
 
-  --color-copper: #B86F4B;
-  --color-copper-hover: #A05C3A;
-  --color-copper-light: #CF835E;
-  --color-copper-tint: #F7EFEA;
-  --color-copper-border: #D89878;
+  /* Primary Phosphor Accents */
+  --color-phosphor: #7FDD9D;
+  --color-phosphor-hover: #6BCB8B;
+  --color-phosphor-secondary: #58B985;
+  --color-phosphor-muted: #A4E8B8;
+  --color-phosphor-glow: rgba(127, 221, 157, 0.35);
+  --color-phosphor-tint: rgba(127, 221, 157, 0.12);
+  --color-phosphor-border: rgba(127, 221, 157, 0.35);
 
-  --color-citron: #C4C66A;
-  --color-citron-light: #D5D785;
-  --color-citron-dark: #A4A648;
-  --color-citron-tint: #F9F9E7;
-  --color-citron-border: #D2D489;
+  /* Typography Colors */
+  --color-graphite-text: #E7F0EA;
+  --color-graphite-text-secondary: #98AEA2;
+  --color-graphite-text-tertiary: #647D70;
 
-  --color-stone: #D8C9B7;
-  --color-stone-light: #E7DDD0;
-  --color-stone-border: #C8B9A6;
-  --color-stone-dark: #9F907E;
-  --color-stone-muted: #7A6C5B;
+  /* Semantic Status Colors */
+  --color-status-applicable: #7FDD9D;
+  --color-status-applicable-bg: rgba(127, 221, 157, 0.12);
+  --color-status-applicable-border: rgba(127, 221, 157, 0.35);
 
-  --color-sage: #718477;
-  --color-sage-light: #8A9D90;
-  --color-sage-dark: #55665A;
-  --color-sage-tint: #EDF2EE;
-  --color-sage-border: #9CB2A3;
+  --color-status-review: #E5B45E;
+  --color-status-review-bg: rgba(229, 180, 94, 0.14);
+  --color-status-review-border: rgba(229, 180, 94, 0.4);
 
-  --color-terracotta: #C86D51;
-  --color-terracotta-light: #DC8367;
-  --color-terracotta-dark: #AB5438;
-  --color-terracotta-tint: #FAECE8;
-  --color-terracotta-border: #E2947D;
+  --color-status-disputed: #A96580;
+  --color-status-disputed-bg: rgba(169, 101, 128, 0.16);
+  --color-status-disputed-border: rgba(169, 101, 128, 0.45);
 
-  --font-editorial: 'Newsreader', Georgia, serif;
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-status-superseded: #7B8E85;
+  --color-status-superseded-bg: rgba(123, 142, 133, 0.14);
+  --color-status-superseded-border: rgba(123, 142, 133, 0.35);
+
+  --color-status-mismatch: #D67D65;
+  --color-status-mismatch-bg: rgba(214, 125, 101, 0.15);
+  --color-status-mismatch-border: rgba(214, 125, 101, 0.4);
+
+  --color-status-unknown: #85968E;
+
+  /* Typography Scale */
+  --font-heading: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Backward Compatibility Tokens mapped cleanly to Neural Graphite */
+  --color-bone: #0B1210;
+  --color-bone-light: #14231D;
+  --color-bone-card: #14231D;
+  --color-bone-dark: #1C3027;
+  --color-bone-glass: rgba(20, 35, 29, 0.85);
+
+  --color-charcoal: #E7F0EA;
+  --color-charcoal-deep: #070D0B;
+  --color-charcoal-light: #14231D;
+  --color-charcoal-surface: #14231D;
+  --color-charcoal-border: #294537;
+  --color-charcoal-muted: #98AEA2;
+  --color-charcoal-glass: rgba(20, 35, 29, 0.85);
+
+  --color-copper: #7FDD9D;
+  --color-copper-hover: #6BCB8B;
+  --color-copper-light: #A4E8B8;
+  --color-copper-glow: #7FDD9D;
+  --color-copper-tint: rgba(127, 221, 157, 0.12);
+  --color-copper-border: rgba(127, 221, 157, 0.35);
+
+  --color-brass: #58B985;
+  --color-brass-light: #7FDD9D;
+  --color-brass-dark: #459E6E;
+  --color-brass-tint: rgba(88, 185, 133, 0.12);
+  --color-brass-border: rgba(88, 185, 133, 0.35);
+
+  --color-sage: #7FDD9D;
+  --color-sage-light: #A4E8B8;
+  --color-sage-dark: #7FDD9D;
+  --color-sage-tint: rgba(127, 221, 157, 0.12);
+  --color-sage-border: rgba(127, 221, 157, 0.35);
+
+  --color-stone: #1C3027;
+  --color-stone-light: #14231D;
+  --color-stone-border: #294537;
+  --color-stone-dark: #647D70;
+  --color-stone-muted: #98AEA2;
+
+  --color-terracotta: #A96580;
+  --color-terracotta-light: #C27D99;
+  --color-terracotta-dark: #8F4E66;
+  --color-terracotta-tint: rgba(169, 101, 128, 0.15);
+  --color-terracotta-border: rgba(169, 101, 128, 0.4);
+
+  --color-parchment: #0B1210;
+  --color-parchment-light: #14231D;
+  --color-parchment-card: #14231D;
+  --color-parchment-dark: #1C3027;
+
+  --color-aubergine: #E7F0EA;
+  --color-aubergine-deep: #070D0B;
+  --color-aubergine-light: #14231D;
+  --color-aubergine-surface: #14231D;
+  --color-aubergine-border: #294537;
+  --color-aubergine-text-muted: #98AEA2;
+
+  --color-citron: #7FDD9D;
+  --color-citron-light: #A4E8B8;
+  --color-citron-dark: #58B985;
+  --color-citron-tint: rgba(127, 221, 157, 0.12);
+  --color-citron-border: rgba(127, 221, 157, 0.35);
+
+  --font-editorial: 'Space Grotesk', system-ui, sans-serif;
 }
 
-/* Custom Scrollbar for editorial workstation */
+/* Base resets & dark theme setup */
+html {
+  color-scheme: dark;
+  background-color: #0B1210;
+}
+
+body {
+  background-color: #0B1210;
+  color: #E7F0EA;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar styled as thin neural filament */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #EAE3D3;
+  background: #0B1210;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #C8B9A6;
+  background: #294537;
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #B86F4B;
+  background: #58B985;
 }
 
-/* Monospace technical pill utility */
-.tech-pill {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: -0.02em;
+/* Glassmorphism & Structured Elevation */
+.glass-panel {
+  background: rgba(20, 35, 29, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #294537;
 }
 
+.glass-panel-elevated {
+  background: rgba(28, 48, 39, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #38604C;
+}
+
+/* Subtle neural glow effects */
+.filament-glow {
+  box-shadow: 0 0 15px rgba(127, 221, 157, 0.15);
+}
+
+.filament-glow-strong {
+  box-shadow: 0 0 25px rgba(127, 221, 157, 0.28);
+}
+
+/* Signal propagation animations */
+@keyframes signalTravel {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.2;
+  }
+}
+
+.animate-signal {
+  animation: signalTravel 3s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-signal,
+  .animate-thread-pulse,
+  .animate-thread-flow,
+  .animate-ping,
+  .animate-spin {
+    animation: none !important;
+  }
+}

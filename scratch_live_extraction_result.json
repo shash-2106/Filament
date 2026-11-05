@@ -1,0 +1,51 @@
+{
+  "usage": {
+    "input_tokens": 410,
+    "output_tokens": 1102,
+    "total_tokens": 1512,
+    "cost_usd": 0.005196
+  },
+  "provider_request_id": "185e08f1-9a54-400e-8b9b-6c91e03005a7",
+  "record_id": "b134f759-b385-47f9-b950-9d0e8983efce",
+  "candidates": [
+    {
+      "idx": 1,
+      "subject": "pgvector_queries_use",
+      "predicate": "assertion",
+      "statement": "pgvector queries use an isolated pool of 5 connections with statement timeouts capped at 15 seconds.",
+      "claim_type": "decision",
+      "scope": "team",
+      "confidence": "0.85",
+      "evidence_quote": "We decided that pgvector queries must run with an isolated pool of 5 connections and statement timeouts capped at 15 seconds.",
+      "source_reference": "Turn 1 (Lead Systems Architect)",
+      "uncertainty_notes": null,
+      "verbatim_verified": true
+    },
+    {
+      "idx": 2,
+      "subject": "production_requires_sslmode=verify-full",
+      "predicate": "assertion",
+      "statement": "Production requires sslmode=verify-full and rejects sslmode=disable.",
+      "claim_type": "constraint",
+      "scope": "team",
+      "confidence": "0.85",
+      "evidence_quote": "production TLS certificate verification is mandatory using sslmode=verify-full. We will reject any connection string that uses sslmode=disable.",
+      "source_reference": "Turn 2 (Security Lead)",
+      "uncertainty_notes": null,
+      "verbatim_verified": true
+    },
+    {
+      "idx": 3,
+      "subject": "sqlite_for_local",
+      "predicate": "assertion",
+      "statement": "SQLite for local development was cancelled; standardized on Docker PostgreSQL 15.",
+      "claim_type": "fact",
+      "scope": "team",
+      "confidence": "0.85",
+      "evidence_quote": "Note that previously we discussed using SQLite for local development, but that plan is obsolete and officially cancelled since we standardized on Docker PostgreSQL 15.",
+      "source_reference": "Turn 3 (DevOps)",
+      "uncertainty_notes": "SQLite plan is obsolete and officially cancelled.",
+      "verbatim_verified": true
+    }
+  ]
+}

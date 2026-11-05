@@ -59,7 +59,7 @@ describe('OverviewPage Component', () => {
 
     expect(screen.getByText('Workspace Control Centre')).toBeInTheDocument();
     expect(screen.getByText('Default Workspace')).toBeInTheDocument();
-    expect(screen.getByText(/Immutable memory assertions, condition-bound validity checks/i)).toBeInTheDocument();
+    expect(screen.getByText(/Filament actively monitors AI knowledge/i)).toBeInTheDocument();
   });
 
   it('renders claims requiring review and recent claims ledger', () => {
@@ -77,8 +77,8 @@ describe('OverviewPage Component', () => {
     const reviewStatements = screen.getAllByText('PostgreSQL instance must be running on port 5433 with role filament_app.');
     expect(reviewStatements.length).toBeGreaterThanOrEqual(1);
 
-    // Recent claims
-    expect(screen.getByText('Recent Governed Claims')).toBeInTheDocument();
+    // Recent memories
+    expect(screen.getByText('Recent Agent Memories')).toBeInTheDocument();
     expect(screen.getByText('Filament uses asynchronous SQLAlchemy engine with asyncpg driver.')).toBeInTheDocument();
   });
 
@@ -91,7 +91,7 @@ describe('OverviewPage Component', () => {
 
     renderWithProviders(<OverviewPage />);
 
-    expect(screen.getByText('No Memory Assertions Found')).toBeInTheDocument();
-    expect(screen.getByText('All claims healthy')).toBeInTheDocument();
+    expect(screen.getByText('No Memories Recorded Yet')).toBeInTheDocument();
+    expect(screen.getByText('All memories healthy')).toBeInTheDocument();
   });
 });

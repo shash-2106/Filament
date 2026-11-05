@@ -24,12 +24,13 @@ describe('Navigation Component', () => {
     expect(screen.getByText('Governed Agent Memory')).toBeInTheDocument();
 
     expect(screen.getByText('Overview')).toBeInTheDocument();
-    expect(screen.getByText('Memory')).toBeInTheDocument();
-    expect(screen.getByText('Evidence')).toBeInTheDocument();
-    expect(screen.getByText('Dependencies')).toBeInTheDocument();
-    expect(screen.getByText('Agents')).toBeInTheDocument();
+    expect(screen.getByText('Interactive Guide')).toBeInTheDocument();
+    expect(screen.getByText('Memories')).toBeInTheDocument();
+    expect(screen.getByText('Supporting Evidence')).toBeInTheDocument();
+    expect(screen.getByText('Memory Connections')).toBeInTheDocument();
+    expect(screen.getByText('Connected AI Agents')).toBeInTheDocument();
     expect(screen.getByText('Integrations')).toBeInTheDocument();
-    expect(screen.getByText('Activity')).toBeInTheDocument();
+    expect(screen.getByText('Activity History')).toBeInTheDocument();
   });
 
   it('displays gateway status when health query succeeds', () => {

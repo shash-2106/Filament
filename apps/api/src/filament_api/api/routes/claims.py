@@ -784,3 +784,48 @@ async def reverify_claim(
 
 
 
+
+
+@router.get(
+    "/claim-relations",
+    response_model=List[ClaimRelationResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List Workspace Claim Relations",
+    description="Lists directed relationship edges between claims for dependency and DAG visualization.",
+)
+async def list_claim_relations(
+    relation_type: Optional[str] = None,
+    context: TrustedContext = Depends(get_current_agent_context),
+    session: AsyncSession = Depends(get_db),
+) -> List[ClaimRelationResponse]:
+    """Retrieve all claim relations in caller's workspace."""
+    try:
+        from filament_api.models.relation import ClaimRelation
+
+        stmt = select(ClaimRelation).where(ClaimRelation.workspace_id == context.workspace_id)
+        if relation_type:
+            stmt = stmt.where(ClaimRelation.relation_type == relation_type)
+        stmt = stmt.order_by(ClaimRelation.created_at.desc())
+
+        res = await session.execute(stmt)
+        relations = res.scalars().all()
+        return [
+            ClaimRelationResponse(
+                id=rel.id,
+                workspace_id=rel.workspace_id,
+                source_claim_id=rel.source_claim_id,
+                target_claim_id=rel.target_claim_id,
+                relation_type=rel.relation_type,
+                rationale=rel.rationale,
+                created_by_agent=rel.created_by_agent,
+                created_at=rel.created_at,
+                affected_claim_ids=[],
+            )
+            for rel in relations
+        ]
+    except Exception as exc:
+        log_safe_exception(logger, f"Error listing relations for workspace {context.workspace_id}", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": {"code": "INTERNAL_SERVER_ERROR", "message": "An internal error occurred."}},
+        ) from exc

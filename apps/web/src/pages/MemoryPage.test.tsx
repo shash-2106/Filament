@@ -40,10 +40,10 @@ describe('MemoryPage Component', () => {
 
     renderWithProviders(<MemoryPage />);
 
-    expect(screen.getByText('Governed Memory Ledger')).toBeInTheDocument();
-    expect(screen.getByText(/Audit, inspect, and evaluate immutable claim assertions/i)).toBeInTheDocument();
+    expect(screen.getByText('Workspace Memories')).toBeInTheDocument();
+    expect(screen.getByText(/Condition-bound knowledge, decisions, and constraints/i)).toBeInTheDocument();
     expect(screen.getByText('Filament claims table links to active condition set via composite foreign key.')).toBeInTheDocument();
-    expect(screen.getByText('set v1')).toBeInTheDocument();
+    expect(screen.getByText(/v1 \(req: v1\)/i)).toBeInTheDocument();
   });
 
   it('renders claim detail drawer when claim query param is present', () => {
@@ -66,7 +66,7 @@ describe('MemoryPage Component', () => {
     renderWithProviders(<MemoryPage />, { route: '/memory?claim=claim-abc-123' });
 
     expect(screen.getByText('Structured Value')).toBeInTheDocument();
-    expect(screen.getByText('Condition-Bound Validity')).toBeInTheDocument();
-    expect(screen.getByText('Evaluate Against Snapshot')).toBeInTheDocument();
+    expect(screen.getByText('Validity Requirements & Evaluation')).toBeInTheDocument();
+    expect(screen.getByText(/Test whether this memory's environmental requirements are satisfied/i)).toBeInTheDocument();
   });
 });
